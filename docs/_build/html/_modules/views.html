@@ -1,0 +1,329 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>views &#8212; documentación de api_manager - 0.0.1</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/translations.js"></script>
+    <link rel="index" title="Índice" href="../genindex.html" />
+    <link rel="search" title="Búsqueda" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Código fuente para views</h1><div class="highlight"><pre>
+<span></span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. module:: views</span>
+<span class="sd">   :platform: Unix, Windows</span>
+<span class="sd">   :synopsis: Un modulo utilizable.</span>
+
+<span class="sd">.. moduleauthor:: Mi Nombre &lt;scastellano10@gmail.com&gt;</span>
+
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">django.http</span> <span class="k">import</span> <span class="n">JsonResponse</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">django.shortcuts</span> <span class="k">import</span> <span class="n">render</span>
+<span class="c1">#from modules.modules2.parametros import constantes</span>
+
+<span class="c1">#Server de ruteo</span>
+<span class="n">server</span> <span class="o">=</span> <span class="s1">&#39;https://ruteo.usig.buenosaires.gob.ar/auto/viaroute&#39;</span>
+<span class="c1">#server datos utiles</span>
+<span class="n">server_datos_utiles</span> <span class="o">=</span> <span class="s1">&#39;https://ws.usig.buenosaires.gob.ar/datos_utiles/&#39;</span>
+<span class="c1">#Server autopista</span>
+<span class="n">server_no_autopista</span> <span class="o">=</span> <span class="s1">&#39;http://ruteo.eastus2.cloudapp.azure.com/auto/nearest/v1/driving/&#39;</span>
+<span class="c1">#Server de retorno a caba</span>
+<span class="n">server_retorno_caba</span> <span class="o">=</span> <span class="s1">&#39;https://epok.buenosaires.gob.ar/ruteo/buscarInformacionRuteo/&#39;</span>
+
+<span class="n">MAX_POINTS</span> <span class="o">=</span> <span class="mi">10</span>
+
+
+<span class="c1">#render swagger de mapa de puntos taxi</span>
+<span class="k">def</span> <span class="nf">puntosmapa_sw</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">render</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s1">&#39;ingresopuntos/puntosmapassw.html&#39;</span><span class="p">,</span> <span class="p">{})</span>
+<span class="c1">#Puntos de la busqueda</span>
+<div class="viewcode-block" id="ingresarPuntosMapa"><a class="viewcode-back" href="../indice_modules.html#views.ingresarPuntosMapa">[documentos]</a><span class="k">def</span> <span class="nf">ingresarPuntosMapa</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Funcion que randeriza el frontend para ingreso de puntos en leaflet y envio ajax hacia</span>
+<span class="sd">    la url calculo_ruta-&gt;consultarPuntos. Es llamada desde el ruteador con la url puntosMapas.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ``request`` :  Sin uso.</span>
+
+
+<span class="sd">    Returns:</span>
+<span class="sd">        render html.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">render</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s1">&#39;ingresopuntos/index2.html&#39;</span><span class="p">,</span> <span class="p">{})</span></div>
+<span class="k">def</span> <span class="nf">ingresarPuntos</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="c1">#return JsonResponse({&#39;santi&#39;: &#39;ssssss&#39;})</span>
+    <span class="k">return</span> <span class="n">render</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s1">&#39;ingresopuntos/ingresopuntos.html&#39;</span><span class="p">,</span> <span class="p">{})</span>
+
+<div class="viewcode-block" id="armarRespuestaPuntos"><a class="viewcode-back" href="../indice_modules.html#views.armarRespuestaPuntos">[documentos]</a><span class="k">def</span> <span class="nf">armarRespuestaPuntos</span><span class="p">(</span><span class="n">datos</span><span class="p">,</span><span class="n">gml</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Funcion que es llamada internamente y que arma diversas consultas a APIs externas</span>
+<span class="sd">    para realizar el calculo de una traza definida por los puntos contenidos en datos.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ``datos (array)``:  Coleccion de flotantes que representan los pares ordenados lat lon</span>
+<span class="sd">        que serviran para la realización de la traza. No puede contener menos</span>
+<span class="sd">        de cuatro numeros, ni una cantidad impar, esta verificacion se hace</span>
+<span class="sd">        en la funcion llamadora.</span>
+
+<span class="sd">        ``gml (int)`` : Entero (0,1) que determina si en el json de salida se agrega o no la traza</span>
+<span class="sd">        calculada entregada por el server de ruteo en formato gml.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">            ``json``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="n">loc</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="c1"># divido los datos en pares ordenados de coordenadas</span>
+    <span class="n">puntos</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">iter</span><span class="p">(</span><span class="n">datos</span><span class="p">)]</span> <span class="o">*</span> <span class="n">n</span><span class="p">))</span>
+    <span class="c1"># valido los puntos ingresados</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">puntos</span><span class="p">:</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">server_no_autopista</span> <span class="o">+</span> <span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;,&#39;</span> <span class="o">+</span> <span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;?exclude=motorway&#39;</span>
+
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span>
+        <span class="p">}</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">allow_redirects</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">resultado_du</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="c1"># print(&#39;resultado json:  &#39; + str(resultado_du))</span>
+        <span class="n">punto_chequeado</span> <span class="o">=</span> <span class="n">resultado_du</span><span class="p">[</span><span class="s1">&#39;waypoints&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;location&#39;</span><span class="p">]</span>
+        <span class="c1"># un array con 3 strs, dos de lat lon y una ultima con lat,lon, todos habienso sido chequeados</span>
+        <span class="n">punto</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">punto_chequeado</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">str</span><span class="p">(</span><span class="n">punto_chequeado</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                 <span class="nb">str</span><span class="p">(</span><span class="n">punto_chequeado</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;,&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">punto_chequeado</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+
+        <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">punto</span><span class="p">)</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="n">server</span> <span class="o">+</span> <span class="s1">&#39;?output=json&#39;</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">longitudLoc</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">loc</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">loc</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">longitudLoc</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">url</span> <span class="o">+</span> <span class="s1">&#39;&amp;loc=&#39;</span> <span class="o">+</span> <span class="n">loc</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="c1"># linea original de armado</span>
+        <span class="c1"># url = server + &#39;?output=json&amp;loc=&#39; + loc[0][2] + &#39;&amp;loc=&#39; + loc[1][2] + &#39;&amp;loc=&#39; + loc[2][2] + &#39;&amp;loc=&#39; + loc[3][2] +&#39;&amp;loc=&#39; + loc[4][2] +  &#39;&amp;loc=&#39; + loc[5][2]</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span>
+    <span class="p">}</span>
+    <span class="c1"># Realizamos la consulta</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">allow_redirects</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">resultado</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">total_time</span> <span class="o">=</span> <span class="n">resultado</span><span class="p">[</span><span class="s1">&#39;route_summary&#39;</span><span class="p">][</span><span class="s1">&#39;total_time&#39;</span><span class="p">]</span>
+        <span class="n">total_distance</span> <span class="o">=</span> <span class="n">resultado</span><span class="p">[</span><span class="s1">&#39;route_summary&#39;</span><span class="p">][</span><span class="s1">&#39;total_distance&#39;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;consulta rechazada en el server de ruteo: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+    <span class="c1"># Verificar si esta dentro o fuera de CABA el ultimo punto</span>
+    <span class="c1"># url = server_datos_utiles + &#39;?x=&#39; + loc[5][1] + &#39;&amp;y=&#39; + loc[5][0]</span>
+
+    <span class="n">url</span> <span class="o">=</span> <span class="n">server_datos_utiles</span> <span class="o">+</span> <span class="s1">&#39;?x=&#39;</span> <span class="o">+</span> <span class="n">loc</span><span class="p">[</span><span class="n">longitudLoc</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;&amp;y=&#39;</span> <span class="o">+</span> <span class="n">loc</span><span class="p">[</span><span class="n">longitudLoc</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="c1"># Realizamos la consulta</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">allow_redirects</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">resultado_du</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+    <span class="n">comuna</span> <span class="o">=</span> <span class="n">resultado_du</span><span class="p">[</span><span class="s1">&#39;comuna&#39;</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">comuna</span><span class="p">)</span>
+    <span class="c1"># si el ultimo punto esta fuera de caba se calcula el retorno</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">comuna</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+
+        <span class="c1"># Consultar punto de retorno a CABA</span>
+
+        <span class="c1"># url_punto_retorno = server_retorno_caba + &#39;?x=&#39; + loc[5][1] + &#39;&amp;y=&#39; + loc[5][0] + &#39;&amp;formato=geojson&#39;</span>
+        <span class="n">url_punto_retorno</span> <span class="o">=</span> <span class="n">server_retorno_caba</span> <span class="o">+</span> <span class="s1">&#39;?x=&#39;</span> <span class="o">+</span> <span class="n">loc</span><span class="p">[</span><span class="n">longitudLoc</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;&amp;y=&#39;</span> <span class="o">+</span> <span class="n">loc</span><span class="p">[</span><span class="n">longitudLoc</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span>
+            <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;&amp;formato=geojson&#39;</span>
+
+        <span class="c1"># Realizamos la consulta de punto de retorno a CABA</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="n">url_punto_retorno</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">allow_redirects</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">resultado_du</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+        <span class="n">punto_acceso_caba</span> <span class="o">=</span> <span class="n">resultado_du</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;latitud&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;,&#39;</span> <span class="o">+</span> <span class="n">resultado_du</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;longitud&quot;</span><span class="p">]</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;debaguear&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">punto_acceso_caba</span><span class="p">)</span>
+
+        <span class="c1"># Composición de la url</span>
+        <span class="c1"># url_ruteo_retorno = server + &#39;?output=json&amp;loc=&#39; + loc[5][2] + &#39;&amp;loc=&#39; + punto_acceso_caba</span>
+        <span class="n">url_ruteo_retorno</span> <span class="o">=</span> <span class="n">server</span> <span class="o">+</span> <span class="s1">&#39;?output=json&amp;loc=&#39;</span> <span class="o">+</span> <span class="n">loc</span><span class="p">[</span><span class="n">longitudLoc</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;&amp;loc=&#39;</span> <span class="o">+</span> <span class="n">punto_acceso_caba</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;url ruteo retorno:  &#39;</span> <span class="o">+</span> <span class="n">url_ruteo_retorno</span><span class="p">)</span>
+        <span class="c1"># Realizamos la consulta</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="n">url_ruteo_retorno</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">allow_redirects</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="c1"># print(response.text)</span>
+
+        <span class="n">resultado</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;resultado gml&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">resultado</span><span class="p">)</span>
+        <span class="n">retorno_caba_distance</span> <span class="o">=</span> <span class="n">resultado</span><span class="p">[</span><span class="s1">&#39;route_summary&#39;</span><span class="p">][</span><span class="s1">&#39;total_distance&#39;</span><span class="p">]</span>
+        <span class="n">retorno_caba_time</span> <span class="o">=</span> <span class="n">resultado</span><span class="p">[</span><span class="s1">&#39;route_summary&#39;</span><span class="p">][</span><span class="s1">&#39;total_time&#39;</span><span class="p">]</span>
+
+    <span class="c1">#el punto final esta dentro de caba</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">retorno_caba_time</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">retorno_caba_distance</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">resultado_json</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">resultado_json</span><span class="p">[</span><span class="s2">&quot;total_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">total_time</span>
+    <span class="n">resultado_json</span><span class="p">[</span><span class="s2">&quot;total_distance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">total_distance</span>
+    <span class="n">resultado_json</span><span class="p">[</span><span class="s2">&quot;return_caba_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">retorno_caba_time</span>
+    <span class="n">resultado_json</span><span class="p">[</span><span class="s2">&quot;return_caba_distance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">retorno_caba_distance</span>
+    <span class="k">if</span> <span class="n">gml</span><span class="o">==</span><span class="s1">&#39;1&#39;</span><span class="p">:</span>
+        <span class="n">resultado_json</span><span class="p">[</span><span class="s2">&quot;gml&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resultado</span>
+
+
+    <span class="n">resul</span> <span class="o">=</span> <span class="n">resultado_json</span>
+    <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">resul</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="consultarPuntos"><a class="viewcode-back" href="../indice_modules.html#views.consultarPuntos">[documentos]</a><span class="k">def</span> <span class="nf">consultarPuntos</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Funcion que es llamada desde el ruteador con la url calculo_ruta. Filtra y analiza el contenido</span>
+<span class="sd">    del request para que la llamada a los servidores de ruteo sea consistente.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ``request (array)``:  request que puede contener el verbo POST o GET, que es una coleccion</span>
+<span class="sd">        de flotantes. Condicion: no puede contener menos de 4 parametros, ni mas de ``MAX_POINTS``.</span>
+
+<span class="sd">        ``gml (int)`` : Entero (0,1) que determina si en el json de salida se agrega o no la traza</span>
+<span class="sd">        calculada entregada por el server de ruteo en formato gml.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">            ``json``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">resultado_json</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">POST</span><span class="p">):</span>
+        <span class="c1">#incluir el header crsf en la llamada ajax</span>
+        <span class="n">datos</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">POST</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s1">&#39;data[]&#39;</span><span class="p">)</span>
+        <span class="n">gml</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">POST</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;gml&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">datos</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">GET</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s1">&#39;data[]&#39;</span><span class="p">)</span>
+        <span class="n">gml</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">GET</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;gml&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;datos&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">datos</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">datos</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span>
+    <span class="c1"># este filtrado tambien contempla la posibilidad de que no se utilice el nombre de lista data[] en algun parametro</span>
+    <span class="c1"># esta oriendado a un uso inadecuado por get desde el cgi</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">datos</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">):</span>
+        <span class="n">resultado_json</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;La llamada necesita al menos 2 coordenadas lat lon&#39;</span>
+        <span class="n">resul</span> <span class="o">=</span> <span class="n">resultado_json</span>
+        <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">resul</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1">#mas de 2 coordenadas pero faltando un parametro, lat o lon</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">datos</span><span class="p">)</span><span class="o">%</span><span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">resultado_json</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;La llamada no contiene una cantidad adecuada de pares ordenados&#39;</span>
+            <span class="n">resul</span> <span class="o">=</span> <span class="n">resultado_json</span>
+            <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">resul</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># este error debe ser filtrado en el frontend especifico de este proyecto, ya que los demas errores</span>
+            <span class="c1"># de coordenadas no podrian presentarse en el caso de la definicion de puntos por drawtool leaflet</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">datos</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">&gt;</span> <span class="n">MAX_POINTS</span><span class="p">):</span>
+                <span class="n">resultado_json</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;No ingrese mas de 10 puntos&#39;</span>
+                <span class="n">resul</span> <span class="o">=</span> <span class="n">resultado_json</span>
+                <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">resul</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1">#gml = True</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;gmll crudo&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">gml</span><span class="p">)</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="n">armarRespuestaPuntos</span><span class="p">(</span><span class="n">datos</span><span class="p">,</span><span class="n">gml</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">res</span></div>
+    <span class="c1">#else:</span>
+      <span class="c1">#  resultado_json[&quot;error&quot;] = &#39;Error en el request&#39;</span>
+      <span class="c1">#  resul = resultado_json</span>
+      <span class="c1">#  return JsonResponse(resul)</span>
+
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../indice.html">api_manager</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navegación</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../indice_modules.html">Paquete src</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../indice.html">Documentation overview</a><ul>
+  <li><a href="index.html">Código de módulo</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Búsqueda rápida</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Ir a" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Santiago Castellano.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

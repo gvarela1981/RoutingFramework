@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Consulta traza de puntos</title>
+</head>
+<body>
+<script>
+
+
+    function resetear(){
+        punto1Lat.value="";
+        punto1Lon.value = "";
+        punto2Lat.value = "";
+        punto2Lon.value = "";
+        punto3Lat.value = "";
+        punto3Lon.value = "";
+        punto4Lat.value = "";
+        punto4Lon.value = "";
+        punto5Lat.value = "";
+        punto5Lon.value = "";
+        punto6Lat.value = "";
+        punto6Lon.value = "";
+    }
+    function restaurar(){
+        punto1Lat.value = "-34.591759";
+        punto1Lon.value = "-58.372200";
+        punto2Lat.value = "-34.600952";
+        punto2Lon.value = "-58.408592";
+        punto3Lat.value = "-34.602409";
+        punto3Lon.value = "-58.442024";
+        punto4Lat.value = "-34.605519";
+        punto4Lon.value = "-58.459969";
+        punto5Lat.value = "-34.630768";
+        punto5Lon.value = "-58.456005";
+        punto6Lat.value = "-34.569041";
+        punto6Lon.value = "-58.528976";
+    }
+</script>
+
+<form action="/taxi" method="get">{% csrf_token %}
+
+    <p>
+        <label for="punto1Lat">Latitud punto1 </label>
+        <input id="punto1Lat" type="number" name="punto1Lat" value="-34.591759">
+
+    </p>
+    <p>
+        <label for="punto1Lon">Longitud punto1 </label>
+        <input id="punto1Lon" type="number" name="punto1Lon" value="-58.372200">
+
+    </p>
+
+    <p>
+        <label for="punto2Lat">Latitud punto2 </label>
+        <input id="punto2Lat" type="number" name="punto2Lat" value="-34.600952">
+
+    </p>
+
+        <p>
+        <label for="punto2Lon">Longitud punto2 </label>
+        <input id="punto2Lon" type="number" name="punto2Lon" value="-58.408592">
+
+    </p>
+
+        <p>
+        <label for="punto3Lat">Latitud punto3 </label>
+        <input id="punto3Lat" type="number" name="punto3Lat" value="-34.602409">
+
+    </p>
+
+        <p>
+        <label for="punto3Lon">Longitud punto3 </label>
+        <input id="punto3Lon" type="number" name="punto3Lon" value="-58.442024">
+
+    </p>
+
+    <p>
+        <label for="punto4Lat">Latitud punto4 </label>
+        <input id="punto4Lat" type="number" name="punto4Lat" value="-34.605519">
+
+    </p>
+
+    <p>
+        <label for="punto4Lon">Longitud punto4 </label>
+        <input id="punto4Lon" type="number" name="punto4Lon" value="-58.459969">
+
+    </p>
+    <p>
+        <label for="punto5Lat">Latitud punto5 </label>
+        <input id="punto5Lat" type="number" name="punto5Lat" value="-34.630768">
+
+    </p>
+        <p>
+        <label for="punto5Lon">Longitud punto5 </label>
+        <input id="punto5Lon" type="number" name="punto5Lon" value="-58.456005">
+
+    </p>
+        <p>
+        <label for="punto6Lat">Latitud punto6 </label>
+        <input id="punto6Lat" type="number" name="punto6Lat" value="-34.569041">
+
+    </p>
+        <p>
+        <label for="punto6Lon">Longitud punto6 </label>
+        <input id="punto6Lon" type="number" name="punto6Lon" value="-58.528976">
+
+    </p>
+
+
+
+
+
+
+
+
+
+<p>
+    <button type="button" onclick="resetear()">vaciar</button>
+    <button type="button" onclick="restaurar()">restaurar</button>
+    <input type="submit" value="Consultar">
+</p>
+
+
+</form>
+</body>
+</html>

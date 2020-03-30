@@ -1,0 +1,299 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+
+	<title>Calculo de retorno a CABA</title>
+
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+
+
+</head>
+<body>
+
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+	<script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js" integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og==" crossorigin=""></script>
+	<link rel="stylesheet" href='{% static "css/L.Control.MousePosition.css" %}' >
+	<link rel="stylesheet" href='{% static "css/Leaflet.Dialog.css" %}' >
+  	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.css"/>
+  	<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.js"></script>
+	<!--<script type="text/javascript" src='{% static "assets/js/Leaflet.Coordinates-0.1.5.min.js" %}'></script>-->
+	<script type="text/javascript" src='{% static "assets/js/L.Control.MousePosition.js" %}'></script>
+	<script type="text/javascript" src='{% static "assets/js/L.Control.MousePosition.js" %}'></script>
+	<script type="text/javascript" src='{% static "assets/js/Leaflet.Dialog.js" %}'></script>
+	<style type="text/css">
+		.tg  {border-collapse:collapse;border-spacing:0;}
+		.tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+		.tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+		.tg .tg-baqh{text-align:center;vertical-align:top}
+		.tg .tg-0g60{font-weight:bold;background-color:#dae8fc;text-align:center;vertical-align:top}
+		.wrapper {
+		    text-align: center;
+		}
+
+		.button {
+		    position: absolute;
+		    
+		}
+
+	</style>
+<!--<script src="./assets/Leaflet.draw.min.js"></script>
+<link rel="stylesheet" href="style/leaflet.draw.js"/>-->
+
+<div id="map" style="width: 600px; height: 400px; margin-left: auto;margin-right: auto;display: block;" align = "center"></div>
+	<!--<form action="/images" method="get">{% csrf_token %}-->
+<p>
+	<div id="retorno" ></div>
+	<table class="tg" align = "center">
+	  <tr>
+	    <th class="tg-0g60">Tiempo total</th>
+	    <th class="tg-0g60">Distancia Total</th>
+	    <th class="tg-0g60">Tiempo de retorno CABA</th>
+	    <th class="tg-0g60">Distancia de retorno a CABA </th>
+	  </tr>
+	  <tr>
+	    <td class="tg-baqh" id = "tiempoTotal">-</td>
+	    <td class="tg-baqh" id = "distanciaTotal">-</td>
+	    <td class="tg-baqh" id = "TRetCABA">-</td>
+	    <td class="tg-baqh" id = "distRetCABA">-</td>
+	  </tr>
+</table>
+</p>
+
+		<p>
+		<div class = "wrapper">
+			 <button id= "btnEnvio" class = "button" disabled onclick="envioData()">Enviar</button> 
+		</div>
+		</p>
+
+
+<script type="text/javascript"> window.CSRF_TOKEN = "{{ csrf_token }}";
+	var coordenadas = [];
+	var puntosTotales=[];
+	//var puntosTotales2=[];
+	//var uluru = {lat: -34.58262707868374, lng: -58.471298217773445};
+	$body = $("body");
+
+	$(document).on({
+	    ajaxStart: function() { 
+	    	document.getElementById("tiempoTotal").innerHTML = 'Procesando...';
+			document.getElementById("distanciaTotal").innerHTML = 'Procesando...';
+			document.getElementById("TRetCABA").innerHTML = 'Procesando...';
+			document.getElementById("distRetCABA").innerHTML = 'Procesando...';
+			deshabilitarEnvio();
+	     },
+	     ajaxStop: function() { 
+	     	
+	     	 }    
+	});
+	$.ajaxSetup({
+	  headers: { "X-CSRFToken": '{{csrf_token}}' }
+	});
+
+
+	function setPuntosJson(data){
+		coordenadas = {data};
+		coordenadas.gml = 1 ;
+	}
+	function getPuntosJson(){
+		return coordenadas;
+	}
+	function deshabilitarEnvio(){
+		document.getElementById("btnEnvio").disabled = true;
+	}
+	function habilitarEnvio(){
+		document.getElementById("btnEnvio").disabled = false;
+	}
+	function resetTabla(){
+		document.getElementById("tiempoTotal").innerHTML = '-';
+		document.getElementById("distanciaTotal").innerHTML = '-';
+		document.getElementById("TRetCABA").innerHTML = '-';
+		document.getElementById("distRetCABA").innerHTML = '-';
+	}
+	var geojsonFeature = {
+    "type": "Feature",
+    "properties": {
+        "name": "Coors Field",
+        "amenity": "Baseball Stadium",
+        "popupContent": "This is where the Rockies play!"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [-104.99404, 39.75621]
+    }
+};
+	function envioData(){
+		var data = getPuntosJson();
+		url = 'http://localhost:8000/calculo_ruta';
+
+		$.ajax({
+		  type: "POST",
+		  url: url,
+		  xhrFields: {
+        	withCredentials: true
+    		},
+		  data: data,
+		  success: function(resultado){
+		  	var tiempoTotalmin, distanciaTotalkm, TRetCABAmin, distRetCABAkm,tiempoTotalhs,TRetCABAhs;
+		  	console.log(resultado.gml);
+			  try {
+			  	tiempoTotalmin = Number((resultado.total_time/60).toFixed(1));
+			  	tiempoTotalhs = Number((tiempoTotalmin/60).toFixed(1));
+			  	distanciaTotalkm = Number((resultado.total_distance/1000).toFixed(1));
+			  	TRetCABAmin = Number((resultado.return_caba_time/60).toFixed(1));
+			  	TRetCABAhs = Number((TRetCABAmin/60).toFixed(1));
+			  	distRetCABAkm = Number((resultado.return_caba_distance/1000).toFixed(1));
+			  }
+			  catch(error){
+			  	console.error(error);
+			  }
+			  if (resultado.error){
+			  	console.log(resultado);
+			  	document.getElementById("tiempoTotal").innerHTML = resultado.error;
+		  		document.getElementById("distanciaTotal").innerHTML = "error";
+		  		document.getElementById("TRetCABA").innerHTML = "error";
+		  		document.getElementById("distRetCABA").innerHTML = "error"
+			  } else {
+			  	document.getElementById("tiempoTotal").innerHTML = tiempoTotalmin+ " min | " + tiempoTotalhs + " hs ";
+		  		document.getElementById("distanciaTotal").innerHTML = resultado.total_distance+ " metros | " + distanciaTotalkm + " km ";
+		  		document.getElementById("TRetCABA").innerHTML =TRetCABAmin+ " min | " + TRetCABAhs+ " hs ";
+		  		document.getElementById("distRetCABA").innerHTML = resultado.return_caba_distance+ " metros | " + distRetCABAkm+ " km ";
+			  }
+			
+		  },
+		  dataType: "json"
+		});
+	} //fin envioData
+
+	var dialog = L.control.dialog();
+	
+	var map = L.map(document.getElementById('map'), {
+	  zoomControl: false
+	}).setView([-34.6188,-58.443832], 12);
+
+	L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+	  attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+	}).addTo(map);
+	L.control.mousePosition().addTo(map);
+
+	var drawnItems = new L.FeatureGroup()
+	map.addLayer(drawnItems)
+
+	var drawControl = new L.Control.Draw({
+	  draw: {
+	    polygon: false,
+	    marker: false,
+	    circlemarker: false,
+	    rectangle: false,
+	    circle: false,
+	  },
+	  
+	});
+	var layer;
+	map.addControl(drawControl);
+	map.on(L.Draw.Event.CREATED, function(e) {
+	  layer = e.layer;
+	  var j = 0;
+	  for (var i = 0; i < e.layer._latlngs.length; i+=2){  	
+	  	puntosTotales[j] = e.layer._latlngs[i].lat;
+	  	puntosTotales[j+1] = e.layer._latlngs[i].lng;
+	  	j+=2;
+	  }
+		habilitarEnvio();
+		setPuntosJson(puntosTotales);
+		colocarMarkers();
+	  	drawnItems.addLayer(layer);
+	});
+
+
+	var i=0;
+	var j = 0;
+	var puntosLat=[];
+	var puntosLon=[];
+
+    //var dialog = L.control.dialog();
+	///map.on('click', function(e){
+		///var coord = e.latlng;
+		///console.log(coord);
+		//var puntosTotales=[];
+		///puntosLat[i] = coord.lat;
+		///puntosLon[i+1] = coord.lng;
+		///puntosTotales[i]=coord.lat;
+		///puntosTotales[i+1]=coord.lng;
+
+		//pTotales.push([puntosTotales[i],puntosTotales[i+1]])
+		//pTotales[i][0]=puntosTotales[i];
+		//pTotales[i][1]=puntosTotales[i+1];
+		//puntosTotales[i]=coord;
+		
+
+	//});
+	var layerGroupMarkers = L.layerGroup().addTo(map);
+	var marcador;
+	function colocarMarkers(){
+		//evito un chunk haciendo un loop de doble paso hasta el anteultimo para que no haya out of index
+		var numPunto = 1;
+		lonPuntos = puntosTotales.length;
+		for(var i = 0; i < lonPuntos - 1; i += 2){
+			//L.marker([puntosTotales[i], puntosTotales[i+1]]).addTo(map);
+			if (numPunto == 1) {
+				numPuntostr = numPunto + ' -Inicial- ';
+			}else if (numPunto == lonPuntos / 2){
+				numPuntostr = numPunto + ' -Final- ';
+			}else {
+				numPuntostr = numPunto.toString();
+			};
+			
+			marcador = L.marker([puntosTotales[i], puntosTotales[i+1]]).bindPopup("<b>Punto: "+numPuntostr+"</b><br>"+puntosTotales[i]+"<br>"+puntosTotales[i+1]).openPopup();
+			marcador.addTo(layerGroupMarkers);
+			//L.marker([puntosTotales[i], puntosTotales[i+1]]).addTo(layerGroupMarkers);
+			//L.marker.bindPopup("<b>Hello world!</b><br>I am a popup.").openPopup();
+			//console.log(lonPuntos+' '+numPunto);
+			numPunto += 1;
+
+		}
+		
+	}
+	//borro todo lo anterior si es que hay
+	map.on('draw:drawstart', function (e) {
+		resetTabla();
+		drawnItems.clearLayers(e.layer);
+    	layerGroupMarkers.clearLayers();
+    	while(puntosTotales.length > 0)
+  			puntosTotales.pop();
+
+	});
+	map.on('draw:drawstop', function (e) {
+
+		/*document.getElementById("punto1Lat").value = puntosLat[0];
+		document.getElementById("punto1Lon").value = puntosLon[1];
+		document.getElementById("punto2Lat").value = puntosLat[2];
+		document.getElementById("punto2Lon").value = puntosLon[3];
+		document.getElementById("punto3Lat").value = puntosLat[4];
+		document.getElementById("punto3Lon").value = puntosLon[5];
+		document.getElementById("punto4Lat").value = puntosLat[6];
+		document.getElementById("punto4Lon").value = puntosLon[7];
+		document.getElementById("punto5Lat").value = puntosLat[8];
+		document.getElementById("punto5Lon").value = puntosLon[9];
+		document.getElementById("punto6Lat").value = puntosLat[10];
+		document.getElementById("punto6Lon").value = puntosLon[11];*/
+		//i = 0;
+		//console.log(puntosTotales.length);
+
+		//habilitarEnvio();
+		//setPuntosJson(puntosTotales);
+		//colocarMarkers();
+		//drawnItems.removeLayer(e.layer);
+		console.log(e);
+	});
+
+
+
+</script>
+
+
+
+</body>
+</html>

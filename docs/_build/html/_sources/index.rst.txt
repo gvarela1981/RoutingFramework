@@ -1,0 +1,17 @@
+Bienvenido a la documentacion de api_manager.
+=============================================
+
+.. toctree::
+   :maxdepth: 2
+
+   indice_modules
+
+
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
