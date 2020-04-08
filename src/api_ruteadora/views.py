@@ -47,26 +47,8 @@ def ingresarPuntos(request):
     #return JsonResponse({'santi': 'ssssss'})
     return render(request, 'ingresopuntos/ingresopuntos.html', {})
 
-def armarRespuestaPuntos(datos,gml):
-    """Funcion que es llamada internamente y que arma diversas consultas a APIs externas
-    para realizar el calculo de una traza definida por los puntos contenidos en datos.
-
-    Args:
-        ``datos (array)``:  Coleccion de flotantes que representan los pares ordenados lat lon
-        que serviran para la realización de la traza. No puede contener menos
-        de cuatro numeros, ni una cantidad impar, esta verificacion se hace
-        en la funcion llamadora.
-
-        ``gml (int)`` : Entero (0,1) que determina si en el json de salida se agrega o no la traza
-        calculada entregada por el server de ruteo en formato gml.
-    Returns:
-            ``json``
-        """
-    loc = []
-    n = 2
-    # divido los datos en pares ordenados de coordenadas
-    puntos = list(zip(*[iter(datos)] * n))
-    # valido los puntos ingresados
+def validarPuntos(puntos):
+    locValidado = []
     for i in puntos:
         url = server_no_autopista + i[1] + ',' + i[0] + '?exclude=motorway'
 
@@ -83,7 +65,31 @@ def armarRespuestaPuntos(datos,gml):
         punto = [str(punto_chequeado[1]), str(punto_chequeado[0]),
                  str(punto_chequeado[1]) + ',' + str(punto_chequeado[0])]
 
-        loc.append(punto)
+        locValidado.append(punto)
+    return locValidado
+
+def armarRespuestaPuntos(datos,gml):
+    """Funcion que es llamada internamente y que arma diversas consultas a APIs externas
+    para realizar el calculo de una traza definida por los puntos contenidos en datos.
+
+    Args:
+        ``datos (array)``:  Coleccion de flotantes que representan los pares ordenados lat lon
+        que serviran para la realización de la traza. No puede contener menos
+        de cuatro numeros, ni una cantidad impar, esta verificacion se hace
+        en la funcion llamadora.
+
+        ``gml (int)`` : Entero (0,1) que determina si en el json de salida se agrega o no la traza
+        calculada entregada por el server de ruteo en formato gml.
+    Returns:
+            ``json``
+        """
+    
+    n = 2
+    # divido los datos en pares ordenados de coordenadas
+    puntos = list(zip(*[iter(datos)] * n))
+    # valido los puntos ingresados
+    loc = validarPuntos(puntos)
+
     url = server + '?output=json'
     j = 0
     longitudLoc = len(loc)
