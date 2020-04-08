@@ -87,24 +87,18 @@ def armarRespuestaPuntos(datos,gml):
     n = 2
     # divido los datos en pares ordenados de coordenadas
     puntos = list(zip(*[iter(datos)] * n))
+    
     # valido los puntos ingresados
     loc = validarPuntos(puntos)
-
-    url = server + '?output=json'
-    j = 0
+    ##### longitudLoc se debe borrar de este scope
     longitudLoc = len(loc)
-    for i in loc:
-        if j < longitudLoc:
-            url = url + '&loc=' + loc[j][2]
-        j = j + 1
-        # linea original de armado
-        # url = server + '?output=json&loc=' + loc[0][2] + '&loc=' + loc[1][2] + '&loc=' + loc[2][2] + '&loc=' + loc[3][2] +'&loc=' + loc[4][2] +  '&loc=' + loc[5][2]
+    destino = loc[-1]
+    
     headers = {
         'Content-Type': 'application/json'
     }
-    # Realizamos la consulta
-    response = requests.request('GET', url, headers=headers, allow_redirects=False)
 
+    response = getRuteo(loc, headers)
     resultado = response.json()
     try:
         total_time = resultado['route_summary']['total_time']
@@ -113,18 +107,10 @@ def armarRespuestaPuntos(datos,gml):
         print ('consulta rechazada en el server de ruteo: '+str(e))
 
     # Verificar si esta dentro o fuera de CABA el ultimo punto
-    # url = server_datos_utiles + '?x=' + loc[5][1] + '&y=' + loc[5][0]
-
-    url = server_datos_utiles + '?x=' + loc[longitudLoc - 1][1] + '&y=' + loc[longitudLoc - 1][0]
-    # Realizamos la consulta
-    response = requests.request('GET', url, headers=headers, allow_redirects=False)
-
-    resultado_du = response.json()
-
-    comuna = resultado_du['comuna']
-    print(comuna)
     # si el ultimo punto esta fuera de caba se calcula el retorno
-    if (comuna == ''):
+    destinoInCABA = destinoIsInCaba(destino, headers)
+   
+    if (destinoInCABA is False):
 
         # Consultar punto de retorno a CABA
 
@@ -231,4 +217,38 @@ def consultarPuntos(request):
       #  resul = resultado_json
       #  return JsonResponse(resul)
 
+def prepararMensajeRuteo(loc):
+    mensaje ='?output=json'
+    j = 0
+    longitudLoc = len(loc)
+    for i in loc:
+        if j < longitudLoc:
+            mensaje = mensaje + '&loc=' + loc[j][2]
+        j = j + 1
+        # linea original de armado
+        # mensaje = '?output=json&loc=' + loc[0][2] + '&loc=' + loc[1][2] + '&loc=' + loc[2][2] + '&loc=' + loc[3][2] +'&loc=' + loc[4][2] +  '&loc=' + loc[5][2]
+    return mensaje
+def getRuteo(loc, headers):
+    mensaje = prepararMensajeRuteo(loc)
+    url = server + mensaje
+    # Realizamos la consulta
+    response = requests.request('GET', url, headers=headers, allow_redirects=False)
+    return response
 
+def destinoIsInCaba(destino, headers):
+    # url = server_datos_utiles + '?x=' + loc[5][1] + '&y=' + loc[5][0]
+    mensaje = '?x=' + destino[1] + '&y=' + destino[0]
+    url = server_datos_utiles + mensaje
+    # Realizamos la consulta
+    response = requests.request('GET', url, headers=headers, allow_redirects=False)
+    
+    resultado_du = response.json()
+
+    comuna = resultado_du['comuna']
+    print(comuna)    
+
+    if(resultado_du['comuna'] == ''):
+        destinoInCABA = False
+    else:
+        destinoInCABA = True
+    return comuna
