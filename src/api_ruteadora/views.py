@@ -91,7 +91,7 @@ def armarRespuestaPuntos(datos,gml):
     # valido los puntos ingresados
     loc = validarPuntos(puntos, headers)
     ##### longitudLoc se debe borrar de este scope
-    longitudLoc = len(loc)
+    #longitudLoc = len(loc)
     destino = loc[-1]
 
     response = getRuteo(loc, headers)
@@ -111,8 +111,7 @@ def armarRespuestaPuntos(datos,gml):
         # Consultar punto de retorno a CABA
 
         # url_punto_retorno = server_retorno_caba + '?x=' + loc[5][1] + '&y=' + loc[5][0] + '&formato=geojson'
-        url_punto_retorno = server_retorno_caba + '?x=' + loc[longitudLoc - 1][1] + '&y=' + loc[longitudLoc - 1][
-            0] + '&formato=geojson'
+        url_punto_retorno = server_retorno_caba + '?x=' + destino[1] + '&y=' + destino[0] + '&formato=geojson'
 
         # Realizamos la consulta de punto de retorno a CABA
 
@@ -127,7 +126,7 @@ def armarRespuestaPuntos(datos,gml):
 
         # Composición de la url
         # url_ruteo_retorno = server + '?output=json&loc=' + loc[5][2] + '&loc=' + punto_acceso_caba
-        url_ruteo_retorno = server + '?output=json&loc=' + loc[longitudLoc - 1][2] + '&loc=' + punto_acceso_caba
+        url_ruteo_retorno = server + '?output=json&loc=' + destino[2] + '&loc=' + punto_acceso_caba
         print('url ruteo retorno:  ' + url_ruteo_retorno)
         # Realizamos la consulta
         response = requests.request('GET', url_ruteo_retorno, headers=headers, allow_redirects=False)
@@ -216,9 +215,8 @@ def consultarPuntos(request):
 def prepararMensajeRuteo(loc):
     mensaje ='?output=json'
     j = 0
-    longitudLoc = len(loc)
     for i in loc:
-        if j < longitudLoc:
+        if j < len(loc):
             mensaje = mensaje + '&loc=' + loc[j][2]
         j = j + 1
         # linea original de armado
