@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+import datetime
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -122,3 +123,17 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = "/static/"
+
+
+# Costos
+INICIO_SERVICIO_DIURNO = datetime.time(6, 0, 0)
+INICIO_SERVICIO_NOCTURNO = datetime.time(22, 0, 0)
+BAJADA_BANDERA_DIURNA = 48.5
+BAJADA_BANDERA_NOCTURNA = 54.9
+VALOR_FICHA_DIURNA = 4.58
+VALOR_FICHA_NOCTURNA = 5.49
+PORCENTAJE_DIURNO_AJUSTE =20.0
+PORCENTAJE_NOCTURNO_AJUSTE = 20.0
+
+# APIS
+MAX_POINTS = 10

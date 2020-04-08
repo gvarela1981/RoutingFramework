@@ -14,6 +14,7 @@ from django.http import JsonResponse
 import requests
 from django.shortcuts import render
 #from modules.modules2.parametros import constantes
+from django.conf import settings
 
 #Server de ruteo
 server = 'https://ruteo.usig.buenosaires.gob.ar/auto/viaroute'
@@ -24,7 +25,12 @@ server_no_autopista = 'http://ruteo.eastus2.cloudapp.azure.com/auto/nearest/v1/d
 #Server de retorno a caba
 server_retorno_caba = 'https://epok.buenosaires.gob.ar/ruteo/buscarInformacionRuteo/'
 
-MAX_POINTS = 10
+MAX_POINTS = settings.MAX_POINTS if hasattr(settings, 'MAX_POINTS') else 0
+INICIO_SERVICIO_DIURNO = settings.INICIO_SERVICIO_DIURNO if hasattr(settings, 'INICIO_SERVICIO_DIURNO') else 0
+INICIO_SERVICIO_NOCTURNO = settings.INICIO_SERVICIO_NOCTURNO if hasattr(settings, 'INICIO_SERVICIO_NOCTURNO') else 0
+BAJADA_BANDERA_DIURNA = settings.BAJADA_BANDERA_DIURNA if hasattr(settings, 'BAJADA_BANDERA_DIURNA') else 0
+VALOR_FICHA_DIURNA = settings.VALOR_FICHA_DIURNA if hasattr(settings, 'VALOR_FICHA_DIURNA') else 0
+PORCENTAJE_DIURNO_AJUSTE = settings.PORCENTAJE_DIURNO_AJUSTE if hasattr(settings, 'PORCENTAJE_DIURNO_AJUSTE') else 0
 
 
 #render swagger de mapa de puntos taxi
@@ -148,7 +154,9 @@ def armarRespuestaPuntos(datos,gml):
     resultado_json["total_time"] = total_time
     resultado_json["total_distance"] = total_distance
     resultado_json["return_caba_time"] = retorno_caba_time
-    resultado_json["return_caba_distance"] = retorno_caba_distance
+    resultado_json["INICIO_SERVICIO_DIURNO"] = INICIO_SERVICIO_DIURNO
+    resultado_json["BAJADA_BANDERA_DIURNA"] = BAJADA_BANDERA_DIURNA
+    resultado_json["VALOR_FICHA_DIURNA"] = VALOR_FICHA_DIURNA
     if gml=='1':
         resultado_json["gml"] = resultado
 
