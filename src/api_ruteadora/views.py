@@ -47,14 +47,10 @@ def ingresarPuntos(request):
     #return JsonResponse({'santi': 'ssssss'})
     return render(request, 'ingresopuntos/ingresopuntos.html', {})
 
-def validarPuntos(puntos):
+def validarPuntos(puntos, headers):
     locValidado = []
     for i in puntos:
         url = server_no_autopista + i[1] + ',' + i[0] + '?exclude=motorway'
-
-        headers = {
-            'Content-Type': 'application/json'
-        }
 
         response = requests.request('GET', url, headers=headers, allow_redirects=False)
 
@@ -88,15 +84,15 @@ def armarRespuestaPuntos(datos,gml):
     # divido los datos en pares ordenados de coordenadas
     puntos = list(zip(*[iter(datos)] * n))
     
-    # valido los puntos ingresados
-    loc = validarPuntos(puntos)
-    ##### longitudLoc se debe borrar de este scope
-    longitudLoc = len(loc)
-    destino = loc[-1]
-    
     headers = {
         'Content-Type': 'application/json'
     }
+    
+    # valido los puntos ingresados
+    loc = validarPuntos(puntos, headers)
+    ##### longitudLoc se debe borrar de este scope
+    longitudLoc = len(loc)
+    destino = loc[-1]
 
     response = getRuteo(loc, headers)
     resultado = response.json()
