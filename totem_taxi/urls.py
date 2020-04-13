@@ -26,5 +26,4 @@ urlpatterns = [
     #path('puntos',views.ingresarPuntos),
     path('puntosMapa',views.ingresarPuntosMapa), #render de la pagina de ingreso de puntos con leaflet, llama a consultar_puntos con la lista de parametros
     #path('puntosmapa_sw',views.puntosmapa_sw), # render de la pagina para consulta con parametros predefinidos en swagger
-    path('admin/', admin.site.urls),
-]
+    ]
