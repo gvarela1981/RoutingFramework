@@ -19,9 +19,9 @@ from django.urls import path
 from src.api_ruteadora import views
 
 urlpatterns = [
-    #path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls),
     #path('santiago', views.santi, name='san'),
-  #  path('images', views.taxi),
+    #path('images', views.taxi),
     path('calculo_ruta', views.consultarPuntos), #api de consulta GET o POST, recibe una lista de mas de 4 parametros y los agrupa de a pares
     #path('puntos',views.ingresarPuntos),
     path('puntosMapa',views.ingresarPuntosMapa), #render de la pagina de ingreso de puntos con leaflet, llama a consultar_puntos con la lista de parametros
