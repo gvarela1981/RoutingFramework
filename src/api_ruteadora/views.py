@@ -14,6 +14,7 @@ from django.http import JsonResponse
 import requests
 from django.shortcuts import render
 #from modules.modules2.parametros import constantes
+from django.conf import settings
 
 #Server de ruteo
 server = 'https://ruteo.usig.buenosaires.gob.ar/auto/viaroute'
@@ -24,7 +25,12 @@ server_no_autopista = 'http://ruteo.eastus2.cloudapp.azure.com/auto/nearest/v1/d
 #Server de retorno a caba
 server_retorno_caba = 'https://epok.buenosaires.gob.ar/ruteo/buscarInformacionRuteo/'
 
-MAX_POINTS = 10
+MAX_POINTS = settings.MAX_POINTS if hasattr(settings, 'MAX_POINTS') else 0
+INICIO_SERVICIO_DIURNO = settings.INICIO_SERVICIO_DIURNO if hasattr(settings, 'INICIO_SERVICIO_DIURNO') else 0
+INICIO_SERVICIO_NOCTURNO = settings.INICIO_SERVICIO_NOCTURNO if hasattr(settings, 'INICIO_SERVICIO_NOCTURNO') else 0
+BAJADA_BANDERA_DIURNA = settings.BAJADA_BANDERA_DIURNA if hasattr(settings, 'BAJADA_BANDERA_DIURNA') else 0
+VALOR_FICHA_DIURNA = settings.VALOR_FICHA_DIURNA if hasattr(settings, 'VALOR_FICHA_DIURNA') else 0
+PORCENTAJE_DIURNO_AJUSTE = settings.PORCENTAJE_DIURNO_AJUSTE if hasattr(settings, 'PORCENTAJE_DIURNO_AJUSTE') else 0
 
 
 #render swagger de mapa de puntos taxi
@@ -47,6 +53,23 @@ def ingresarPuntos(request):
     #return JsonResponse({'santi': 'ssssss'})
     return render(request, 'ingresopuntos/ingresopuntos.html', {})
 
+def validarPuntos(puntos, headers):
+    locValidado = []
+    for i in puntos:
+        url = server_no_autopista + i[1] + ',' + i[0] + '?exclude=motorway'
+
+        response = requests.request('GET', url, headers=headers, allow_redirects=False)
+
+        resultado_du = response.json()
+        # print('resultado json:  ' + str(resultado_du))
+        punto_chequeado = resultado_du['waypoints'][0]['location']
+        # un array con 3 strs, dos de lat lon y una ultima con lat,lon, todos habienso sido chequeados
+        punto = [str(punto_chequeado[1]), str(punto_chequeado[0]),
+                 str(punto_chequeado[1]) + ',' + str(punto_chequeado[0])]
+
+        locValidado.append(punto)
+    return locValidado
+
 def armarRespuestaPuntos(datos,gml):
     """Funcion que es llamada internamente y que arma diversas consultas a APIs externas
     para realizar el calculo de una traza definida por los puntos contenidos en datos.
@@ -62,43 +85,22 @@ def armarRespuestaPuntos(datos,gml):
     Returns:
             ``json``
         """
-    loc = []
+    
     n = 2
     # divido los datos en pares ordenados de coordenadas
     puntos = list(zip(*[iter(datos)] * n))
-    # valido los puntos ingresados
-    for i in puntos:
-        url = server_no_autopista + i[1] + ',' + i[0] + '?exclude=motorway'
-
-        headers = {
-            'Content-Type': 'application/json'
-        }
-
-        response = requests.request('GET', url, headers=headers, allow_redirects=False)
-
-        resultado_du = response.json()
-        # print('resultado json:  ' + str(resultado_du))
-        punto_chequeado = resultado_du['waypoints'][0]['location']
-        # un array con 3 strs, dos de lat lon y una ultima con lat,lon, todos habienso sido chequeados
-        punto = [str(punto_chequeado[1]), str(punto_chequeado[0]),
-                 str(punto_chequeado[1]) + ',' + str(punto_chequeado[0])]
-
-        loc.append(punto)
-    url = server + '?output=json'
-    j = 0
-    longitudLoc = len(loc)
-    for i in loc:
-        if j < longitudLoc:
-            url = url + '&loc=' + loc[j][2]
-        j = j + 1
-        # linea original de armado
-        # url = server + '?output=json&loc=' + loc[0][2] + '&loc=' + loc[1][2] + '&loc=' + loc[2][2] + '&loc=' + loc[3][2] +'&loc=' + loc[4][2] +  '&loc=' + loc[5][2]
+    
     headers = {
         'Content-Type': 'application/json'
     }
-    # Realizamos la consulta
-    response = requests.request('GET', url, headers=headers, allow_redirects=False)
+    
+    # valido los puntos ingresados
+    loc = validarPuntos(puntos, headers)
+    ##### longitudLoc se debe borrar de este scope
+    #longitudLoc = len(loc)
+    destino = loc[-1]
 
+    response = getRuteo(loc, headers)
     resultado = response.json()
     try:
         total_time = resultado['route_summary']['total_time']
@@ -107,24 +109,15 @@ def armarRespuestaPuntos(datos,gml):
         print ('consulta rechazada en el server de ruteo: '+str(e))
 
     # Verificar si esta dentro o fuera de CABA el ultimo punto
-    # url = server_datos_utiles + '?x=' + loc[5][1] + '&y=' + loc[5][0]
-
-    url = server_datos_utiles + '?x=' + loc[longitudLoc - 1][1] + '&y=' + loc[longitudLoc - 1][0]
-    # Realizamos la consulta
-    response = requests.request('GET', url, headers=headers, allow_redirects=False)
-
-    resultado_du = response.json()
-
-    comuna = resultado_du['comuna']
-    print(comuna)
     # si el ultimo punto esta fuera de caba se calcula el retorno
-    if (comuna == ''):
+    destinoInCABA = destinoIsInCaba(destino, headers)
+   
+    if (destinoInCABA is False):
 
         # Consultar punto de retorno a CABA
 
         # url_punto_retorno = server_retorno_caba + '?x=' + loc[5][1] + '&y=' + loc[5][0] + '&formato=geojson'
-        url_punto_retorno = server_retorno_caba + '?x=' + loc[longitudLoc - 1][1] + '&y=' + loc[longitudLoc - 1][
-            0] + '&formato=geojson'
+        url_punto_retorno = server_retorno_caba + '?x=' + destino[1] + '&y=' + destino[0] + '&formato=geojson'
 
         # Realizamos la consulta de punto de retorno a CABA
 
@@ -139,7 +132,7 @@ def armarRespuestaPuntos(datos,gml):
 
         # Composición de la url
         # url_ruteo_retorno = server + '?output=json&loc=' + loc[5][2] + '&loc=' + punto_acceso_caba
-        url_ruteo_retorno = server + '?output=json&loc=' + loc[longitudLoc - 1][2] + '&loc=' + punto_acceso_caba
+        url_ruteo_retorno = server + '?output=json&loc=' + destino[2] + '&loc=' + punto_acceso_caba
         print('url ruteo retorno:  ' + url_ruteo_retorno)
         # Realizamos la consulta
         response = requests.request('GET', url_ruteo_retorno, headers=headers, allow_redirects=False)
@@ -161,7 +154,9 @@ def armarRespuestaPuntos(datos,gml):
     resultado_json["total_time"] = total_time
     resultado_json["total_distance"] = total_distance
     resultado_json["return_caba_time"] = retorno_caba_time
-    resultado_json["return_caba_distance"] = retorno_caba_distance
+    resultado_json["INICIO_SERVICIO_DIURNO"] = INICIO_SERVICIO_DIURNO
+    resultado_json["BAJADA_BANDERA_DIURNA"] = BAJADA_BANDERA_DIURNA
+    resultado_json["VALOR_FICHA_DIURNA"] = VALOR_FICHA_DIURNA
     if gml=='1':
         resultado_json["gml"] = resultado
 
@@ -225,4 +220,37 @@ def consultarPuntos(request):
       #  resul = resultado_json
       #  return JsonResponse(resul)
 
+def prepararMensajeRuteo(loc):
+    mensaje ='?output=json'
+    j = 0
+    for i in loc:
+        if j < len(loc):
+            mensaje = mensaje + '&loc=' + loc[j][2]
+        j = j + 1
+        # linea original de armado
+        # mensaje = '?output=json&loc=' + loc[0][2] + '&loc=' + loc[1][2] + '&loc=' + loc[2][2] + '&loc=' + loc[3][2] +'&loc=' + loc[4][2] +  '&loc=' + loc[5][2]
+    return mensaje
+def getRuteo(loc, headers):
+    mensaje = prepararMensajeRuteo(loc)
+    url = server + mensaje
+    # Realizamos la consulta
+    response = requests.request('GET', url, headers=headers, allow_redirects=False)
+    return response
 
+def destinoIsInCaba(destino, headers):
+    # url = server_datos_utiles + '?x=' + loc[5][1] + '&y=' + loc[5][0]
+    mensaje = '?x=' + destino[1] + '&y=' + destino[0]
+    url = server_datos_utiles + mensaje
+    # Realizamos la consulta
+    response = requests.request('GET', url, headers=headers, allow_redirects=False)
+    
+    resultado_du = response.json()
+
+    comuna = resultado_du['comuna']
+    print(comuna)    
+
+    if(resultado_du['comuna'] == ''):
+        destinoInCABA = False
+    else:
+        destinoInCABA = True
+    return comuna
