@@ -14,11 +14,12 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 #from taxi import views
-from src.api_ruteadora import views
+from api_ruteadora import views
 
 urlpatterns = [
+    path('api_ruteadora/', include('api_ruteadora.urls')),
     path('admin/', admin.site.urls),
     #path('santiago', views.santi, name='san'),
     #path('images', views.taxi),

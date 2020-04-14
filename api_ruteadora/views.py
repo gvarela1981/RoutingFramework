@@ -15,6 +15,9 @@ import requests
 from django.shortcuts import render
 #from modules.modules2.parametros import constantes
 from django.conf import settings
+# para implementar la vista de idex
+from django.http import HttpResponse
+
 
 #Server de ruteo
 server = 'https://ruteo.usig.buenosaires.gob.ar/auto/viaroute'
@@ -32,6 +35,10 @@ BAJADA_BANDERA_DIURNA = settings.BAJADA_BANDERA_DIURNA if hasattr(settings, 'BAJ
 VALOR_FICHA_DIURNA = settings.VALOR_FICHA_DIURNA if hasattr(settings, 'VALOR_FICHA_DIURNA') else 0
 PORCENTAJE_DIURNO_AJUSTE = settings.PORCENTAJE_DIURNO_AJUSTE if hasattr(settings, 'PORCENTAJE_DIURNO_AJUSTE') else 0
 
+# index
+
+def index(request):
+    return HttpResponse("Hello, world. You're at the polls index.")
 
 #render swagger de mapa de puntos taxi
 def puntosmapa_sw(request):
