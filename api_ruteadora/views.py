@@ -17,10 +17,12 @@ from django.shortcuts import render
 from django.conf import settings
 # para implementar la vista de idex
 from django.http import HttpResponse
+from api_ruteadora.models import Endpoint
 
 
 #Server de ruteo
-server = 'https://ruteo.usig.buenosaires.gob.ar/auto/viaroute'
+objRuteo = Endpoint.objects.filter(nombre='Ruteo')
+server = objRuteo.values_list('url', flat=True)[0]
 #server datos utiles
 server_datos_utiles = 'https://ws.usig.buenosaires.gob.ar/datos_utiles/'
 #Server autopista
