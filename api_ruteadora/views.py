@@ -24,11 +24,14 @@ from api_ruteadora.models import Endpoint
 objRuteo = Endpoint.objects.filter(nombre='Ruteo')
 server = objRuteo.values_list('url', flat=True)[0]
 #server datos utiles
-server_datos_utiles = 'https://ws.usig.buenosaires.gob.ar/datos_utiles/'
+objRuteo = Endpoint.objects.filter(nombre='Destino en CABA')
+server_datos_utiles = objRuteo.values_list('url', flat=True)[0]
 #Server autopista
-server_no_autopista = 'http://ruteo.eastus2.cloudapp.azure.com/auto/nearest/v1/driving/'
+objRuteo = Endpoint.objects.filter(nombre='Filtro de Autopista')
+server_no_autopista = objRuteo.values_list('url', flat=True)[0]
 #Server de retorno a caba
-server_retorno_caba = 'https://epok.buenosaires.gob.ar/ruteo/buscarInformacionRuteo/'
+objRuteo = Endpoint.objects.filter(nombre='Retorno a CABA')
+server_retorno_caba = objRuteo.values_list('url', flat=True)[0]
 
 MAX_POINTS = settings.MAX_POINTS if hasattr(settings, 'MAX_POINTS') else 0
 INICIO_SERVICIO_DIURNO = settings.INICIO_SERVICIO_DIURNO if hasattr(settings, 'INICIO_SERVICIO_DIURNO') else 0
@@ -102,7 +105,7 @@ def armarRespuestaPuntos(datos,gml):
     headers = {
         'Content-Type': 'application/json'
     }
-    
+
     # valido los puntos ingresados
     loc = validarPuntos(puntos, headers)
     ##### longitudLoc se debe borrar de este scope
@@ -256,10 +259,10 @@ def destinoIsInCaba(destino, headers):
     resultado_du = response.json()
 
     comuna = resultado_du['comuna']
-    print(comuna)    
+    print(comuna)
 
     if(resultado_du['comuna'] == ''):
         destinoInCABA = False
     else:
         destinoInCABA = True
-    return comuna
+    return destinoInCABA
