@@ -108,8 +108,6 @@ def armarRespuestaPuntos(datos,gml):
 
     # valido los puntos ingresados
     loc = validarPuntos(puntos, headers)
-    ##### longitudLoc se debe borrar de este scope
-    #longitudLoc = len(loc)
     destino = loc[-1]
 
     response = getRuteo(loc, headers)
@@ -227,6 +225,9 @@ def consultarPuntos(request):
       #  return JsonResponse(resul)
 
 def prepararMensajeRuteo(loc):
+    """
+    Prepara el string para la consulta del ruteo
+    """
     mensaje ='?output=json'
     j = 0
     for i in loc:
@@ -237,6 +238,9 @@ def prepararMensajeRuteo(loc):
         # mensaje = '?output=json&loc=' + loc[0][2] + '&loc=' + loc[1][2] + '&loc=' + loc[2][2] + '&loc=' + loc[3][2] +'&loc=' + loc[4][2] +  '&loc=' + loc[5][2]
     return mensaje
 def getRuteo(loc, headers):
+    """
+    Ejecuta la consulta a la ruta a la API de ruteo
+    """
     mensaje = prepararMensajeRuteo(loc)
     url = server + mensaje
     # Realizamos la consulta
@@ -244,6 +248,10 @@ def getRuteo(loc, headers):
     return response
 
 def destinoIsInCaba(destino, headers):
+    """
+    Consulta si el destino se encuentra dentro de CABA
+    o si se debe calcular los costos de retorno a CABA
+    """
     # url = server_datos_utiles + '?x=' + loc[5][1] + '&y=' + loc[5][0]
     mensaje = '?x=' + destino[1] + '&y=' + destino[0]
     url = server_datos_utiles + mensaje
@@ -262,7 +270,10 @@ def destinoIsInCaba(destino, headers):
     return destinoInCABA
 
 def getRetornoCABA(destino, qheaders):
-	# Consultar punto de retorno a CABA
+	"""
+    Consultar el punto de retorno a CABA
+    mas cercano al destino
+    """
 	# Composición de la url
 	# url_punto_retorno = server_retorno_caba + '?x=' + loc[5][1] + '&y=' + loc[5][0] + '&formato=geojson'
 	url_punto_retorno = server_retorno_caba + '?x=' + destino[1] + '&y=' + destino[0] + '&formato=geojson'
