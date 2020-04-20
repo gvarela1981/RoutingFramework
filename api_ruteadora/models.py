@@ -5,7 +5,7 @@ from django.utils import timezone
 
 
 class Endpoint(models.Model):
-    nombre = models.CharField('Nombre del Endpoint',max_length=20)
+    nombre = models.CharField('Nombre del Endpoint',max_length=20, unique=True)
     url = models.CharField(max_length=200)
     fecha_creacion = models.DateTimeField('Fecha de Creacion') # agregar default
     fecha_modificacion = models.DateTimeField('Fecha de Modificacion') # agregar default
