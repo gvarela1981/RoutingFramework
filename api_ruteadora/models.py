@@ -15,6 +15,11 @@ class Endpoint(models.Model):
     	return self.nombre
 
 class Costo(models.Model):
+	"""
+	Modelo de costos, los valores se usan para calcular el costo del viaje
+	las variables que inician con el prefijo "conf" son puramente descriptivas
+	y no tienen impacto en el comportamiento
+	"""
 	nombre	= models.CharField('Costos', default='Costo', max_length=20, unique=True)
 	INICIO_SERVICIO_DIURNO = models.TimeField('Inicio del servicio diurno', default='06:00:00')
 	conf_fecha_inicio_incio_diurno = models.DateTimeField('Fecha de inicio del valor',  default=timezone.now)
