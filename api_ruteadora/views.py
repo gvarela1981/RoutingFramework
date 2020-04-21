@@ -22,27 +22,27 @@ from api_ruteadora.models import Endpoint, Costo
 #APIs que se consumen, despues de actualizarlas se debe reiniciar servicio
 #Server de ruteo
 objRuteo = Endpoint.objects.filter(nombre='Ruteo')
-server = objRuteo.values_list('url', flat=True)[0]
+server = objRuteo.values_list('url', flat=True).first()
 #server datos utiles
 objRuteo = Endpoint.objects.filter(nombre='Destino en CABA')
-server_datos_utiles = objRuteo.values_list('url', flat=True)[0]
+server_datos_utiles = objRuteo.values_list('url', flat=True).first()
 #Server autopista
 objRuteo = Endpoint.objects.filter(nombre='Filtro de Autopista')
-server_no_autopista = objRuteo.values_list('url', flat=True)[0]
+server_no_autopista = objRuteo.values_list('url', flat=True).first()
 #Server de retorno a caba
 objRuteo = Endpoint.objects.filter(nombre='Retorno a CABA')
-server_retorno_caba = objRuteo.values_list('url', flat=True)[0]
+server_retorno_caba = objRuteo.values_list('url', flat=True).first()
 
 MAX_POINTS = settings.MAX_POINTS if hasattr(settings, 'MAX_POINTS') else 0
 objSettings = Costo.objects.filter(nombre='Costo')
-INICIO_SERVICIO_DIURNO = objSettings.values_list('INICIO_SERVICIO_DIURNO', flat=True)[0]
-INICIO_SERVICIO_NOCTURNO = objSettings.values_list('INICIO_SERVICIO_NOCTURNO', flat=True)[0]
-BAJADA_BANDERA_DIURNA = objSettings.values_list('BAJADA_BANDERA_DIURNA', flat=True)[0]
-BAJADA_BANDERA_NOCTURNA = objSettings.values_list('BAJADA_BANDERA_NOCTURNA', flat=True)[0]
-VALOR_FICHA_DIURNA = objSettings.values_list('VALOR_FICHA_DIURNA', flat=True)[0]
-VALOR_FICHA_NOCTURNA = objSettings.values_list('VALOR_FICHA_NOCTURNA', flat=True)[0]
-PORCENTAJE_DIURNO_AJUSTE = objSettings.values_list('PORCENTAJE_DIURNO_AJUSTE', flat=True)[0]
-PORCENTAJE_NOCTURNO_AJUSTE = objSettings.values_list('PORCENTAJE_NOCTURNO_AJUSTE', flat=True)[0]
+INICIO_SERVICIO_DIURNO = objSettings.values_list('INICIO_SERVICIO_DIURNO', flat=True).first()
+INICIO_SERVICIO_NOCTURNO = objSettings.values_list('INICIO_SERVICIO_NOCTURNO', flat=True).first()
+BAJADA_BANDERA_DIURNA = objSettings.values_list('BAJADA_BANDERA_DIURNA', flat=True).first()
+BAJADA_BANDERA_NOCTURNA = objSettings.values_list('BAJADA_BANDERA_NOCTURNA', flat=True).first()
+VALOR_FICHA_DIURNA = objSettings.values_list('VALOR_FICHA_DIURNA', flat=True).first()
+VALOR_FICHA_NOCTURNA = objSettings.values_list('VALOR_FICHA_NOCTURNA', flat=True).first()
+PORCENTAJE_DIURNO_AJUSTE = objSettings.values_list('PORCENTAJE_DIURNO_AJUSTE', flat=True).first()
+PORCENTAJE_NOCTURNO_AJUSTE = objSettings.values_list('PORCENTAJE_NOCTURNO_AJUSTE', flat=True).first()
 
 # index
 
