@@ -76,8 +76,12 @@ WSGI_APPLICATION = 'totem_taxi.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'api_taxi',
+        'USER': 'django',
+        'PASSWORD': 'django',
+        'HOST': '192.168.0.9',
+        'PORT': '5444',
     }
 }
 
