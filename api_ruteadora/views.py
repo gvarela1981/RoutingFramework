@@ -17,7 +17,12 @@ from django.shortcuts import render
 from django.conf import settings
 # para implementar la vista de idex
 from django.http import HttpResponse
-from api_ruteadora.models import Endpoint, Costo
+from api_ruteadora.models import Endpoint, Costo, Ruteo
+
+import json as simplejson
+# from commons.commons import aplicar_callback
+# from commons.commons import armarEstructuraGeoLayer
+from django.contrib.gis.geos import GEOSGeometry
 
 #APIs que se consumen, despues de actualizarlas se debe reiniciar servicio
 #Server de ruteo
@@ -274,14 +279,124 @@ def destinoIsInCaba(destino, headers):
     return destinoInCABA
 
 def getRetornoCABA(destino, qheaders):
-	"""
+    """
     Consultar el punto de retorno a CABA
     mas cercano al destino
     """
-	# Composición de la url
-	# url_punto_retorno = server_retorno_caba + '?x=' + loc[5][1] + '&y=' + loc[5][0] + '&formato=geojson'
-	url_punto_retorno = server_retorno_caba + '?x=' + destino[1] + '&y=' + destino[0] + '&formato=geojson'
-	
-	# Realizamos la consulta de punto de retorno a CABA
-	response = requests.request('GET', url_punto_retorno, headers=qheaders, allow_redirects=False)
-	return response
+    # Composición de la url
+    # url_punto_retorno = server_retorno_caba + '?x=' + loc[5][1] + '&y=' + loc[5][0] + '&formato=geojson'
+    url_punto_retorno = server_retorno_caba + '?x=' + destino[1] + '&y=' + destino[0] + '&formato=geojson'
+    
+    # Realizamos la consulta de punto de retorno a CABA
+    response = requests.request('GET', url_punto_retorno, headers=qheaders, allow_redirects=False)
+    return response
+
+def getRetornoCABA_new(destino, qheaders):
+    """
+    Consultar el punto de retorno a CABA
+    mas cercano al destino
+    """
+    # Composición de la url
+    mensaje = destino + '&formato=geojson'
+    response = buscarInformacionRuteo(mensaje)
+
+    return response
+
+
+def buscarInformacionRuteo(request):
+    try:
+
+        callback = str(request.GET.get('callback', ''))
+        x = request.GET.get('x', 0)
+        y = request.GET.get('y', 0)
+        srid = request.GET.get('srid', 4326)
+        radio = request.GET.get('radio', 0)
+        orden = request.GET.get('orden', 'distancia')
+        limite = request.GET.get('limite', 10)
+        fullInfo = request.GET.get('fullInfo', 'False')
+        formato = request.GET.get('formato', 'json')
+
+        response = {"totalFull": 0, "instancias": [], 'total': 0}
+
+        try:
+
+            x = float(x)
+            y = float(y)
+
+            if not x != 0 or not y != 0:
+                x = 0
+                y = 0
+
+        except Exception:
+            x = 0
+            y = 0
+
+        try:
+            srid = int(srid)
+
+        except Exception:
+            srid = 4326
+
+        try:
+            radio = float(radio)
+
+            if radio > 0:
+                if radio > 50:
+                    radio = 1
+            else:
+                radio = 1
+
+        except Exception:
+            radio = 1
+
+        try:
+            limite = int(limite)
+
+            if limite < 0:
+                limite = 10
+
+        except Exception:
+            limite = 10
+
+        punto = GEOSGeometry('SRID={2};POINT({0} {1})'.format(x, y, srid))
+
+        if srid != settings.SRID:
+            punto.transform(settings.SRID)
+
+        objetos_ruteo = Ruteo.busquedaGeografica(x, y, srid, radio)
+
+        obj = objetos_ruteo[0]
+
+        latitud = obj.latitud
+        longitud = obj.longitud
+        
+
+        instancia = {                
+                "latitud" : latitud,
+                "longitud" : longitud
+        }
+
+        response['instancias'].append(instancia)
+        response['totalFull'] += 1
+        response['total'] += 1
+
+
+        if formato == 'geojson':
+
+            if response['instancias']:
+                res = response['instancias']
+
+            else:
+                res = armarEstructuraGeoLayer([], [], '', 'geojson')
+
+            res = simplejson.dumps(res)
+            res = aplicar_callback(res, callback)
+            return HttpResponse(res, mimetype="application/json")
+
+        response = simplejson.dumps(response)
+        response = aplicar_callback(response, callback)
+        return HttpResponse(response, mimetype="application/json")
+    except Exception as e:
+        response = simplejson.dumps({'error': e.__str__()})
+        response = aplicar_callback(response, callback)
+        return HttpResponse(response, mimetype="application/json")
