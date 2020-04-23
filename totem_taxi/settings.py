@@ -23,7 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '$k%ue2nj9@7iaw0#ezwvc3b)&4kfkoh9wvf)sl4*$gzsvwj^ga'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -37,7 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.gis',
     'api_ruteadora.apps.ApiRuteadoraConfig',
+    'leaflet',
 ]
 
 MIDDLEWARE = [
@@ -76,7 +78,7 @@ WSGI_APPLICATION = 'totem_taxi.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'api_taxi',
         'USER': 'django',
         'PASSWORD': 'django',
@@ -122,11 +124,44 @@ USE_L10N = True
 
 USE_TZ = True
 
+# Variables Globales
+SRID = 97433
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
-STATIC_URL = "/static/"
+if not DEBUG:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+STATIC_URL = '/static/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
+
+# Solo para Desarrollo
+if DEBUG:
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR, 'static')
+]
 
 # APIS
 MAX_POINTS = 10
+
+CORS_ORIGIN_ALLOW_ALL = True
+
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+LEAFLET_CONFIG = {
+    'SRID': 3857,
+    'TILES': [
+        ('Amba con Transporte', 'https://servicios.usig.buenosaires.gob.ar/mapcache/tms/1.0.0/amba_con_transporte_3857@GoogleMapsCompatible/{z}/{x}/{-y}.png',
+         {'attribution': '<a href="http://usig.buenosaires.gob.ar" target="_blank">USIG</a> (<a href="http://www.buenosaires.gob.ar" target="_blank">GCBA</a>), © <a href="http://www.openstreetmap.org/copyright/en" target="_blank">OpenStreetMap</a> (ODbL)', 'maxZoom': 16}
+         ),
+        ('Fotografias Aereas', 'http://servicios.usig.buenosaires.gob.ar/mapcache/tms/1.0.0/fotografias_aereas_2017_caba_3857@GoogleMapsCompatible/{z}/{x}/{-y}.png',
+         {'attribution': '<a href="http://usig.buenosaires.gob.ar" target="_blank">USIG</a> (<a href="http://www.buenosaires.gob.ar" target="_blank">GCBA</a>), © <a href="http://www.openstreetmap.org/copyright/en" target="_blank">OpenStreetMap</a> (ODbL)'}
+         ),
+    ],
+    'DEFAULT_CENTER': (-34.603722, -58.41),
+    'DEFAULT_ZOOM': 12,
+    'MIN_ZOOM': 3,
+    'MAX_ZOOM': 18,
+}

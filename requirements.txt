@@ -15,5 +15,6 @@ python-dateutil==2.7.5
 python-mimeparse==1.6.0
 pytz==2018.9
 djangorestframework==3.5.3
+django-leaflet
 requests
 sphinx
