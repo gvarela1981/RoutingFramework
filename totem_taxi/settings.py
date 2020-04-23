@@ -146,6 +146,7 @@ if DEBUG:
 # APIS
 MAX_POINTS = 10
 
+# Cors and X-Frame Config
 CORS_ORIGIN_ALLOW_ALL = True
 
 X_FRAME_OPTIONS = 'SAMEORIGIN'
