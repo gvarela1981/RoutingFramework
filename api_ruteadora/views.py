@@ -166,9 +166,6 @@ def armarRespuestaPuntos(datos,gml):
     resultado_json["total_distance"] = total_distance
     resultado_json["return_caba_time"] = retorno_caba_time
     resultado_json["return_caba_distance"] = retorno_caba_distance
-    resultado_json["INICIO_SERVICIO_DIURNO"] = INICIO_SERVICIO_DIURNO
-    resultado_json["BAJADA_BANDERA_DIURNA"] = BAJADA_BANDERA_DIURNA
-    resultado_json["VALOR_FICHA_DIURNA"] = VALOR_FICHA_DIURNA
     if gml=='1':
         resultado_json["gml"] = resultado
 
