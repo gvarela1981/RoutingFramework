@@ -137,30 +137,21 @@ def armarRespuestaPuntos(datos,gml):
         # Consultar punto de retorno a CABA
         response = getRetornoCABA(destino, headers)
         
-        # resultado_du = response.json()
-        resultado_du = response
-        print('resultado')
-        print(resultado_du)
-        print('origen')
-        print(loc[0])
-        print('destino')
-        print(destino)
-        
+        resultado_du = response.json() # metodo original
+        #resultado_du = response # metodo nuevo
+                
         # Formateando el punto de retornoCABA para el ruteo
         retornoCABA = (resultado_du[0]['latitud'], resultado_du[0]['longitud'])
         ruteoRetornoCABA = [destino]
-        print(type(retornoCABA))
         # ruteoRetornoCABA.append(retornoCABA)
         ruteoRetornoCABA.append([retornoCABA[0], retornoCABA[1], str(retornoCABA[0] + "," + retornoCABA[1])])
-        print(ruteoRetornoCABA)
-
+        
         print('debaguear')
 
         response = getRuteo(ruteoRetornoCABA, headers)
         print('respuesta recibida')
         resultado = response.json()
         print('resultado gml')
-        print(resultado)
         retorno_caba_distance = resultado['route_summary']['total_distance']
         retorno_caba_time = resultado['route_summary']['total_time']
 
@@ -287,7 +278,7 @@ def destinoIsInCaba(destino, headers):
         destinoInCABA = True
     return destinoInCABA
 
-def getRetornoCABA_old(destino, qheaders):
+def getRetornoCABA(destino, qheaders):
     """
     Consultar el punto de retorno a CABA
     mas cercano al destino
@@ -300,7 +291,7 @@ def getRetornoCABA_old(destino, qheaders):
     response = requests.request('GET', url_punto_retorno, headers=qheaders, allow_redirects=False)
     return response
 
-def getRetornoCABA(destino, qheaders):
+def getRetornoCABA_new(destino, qheaders):
     """
     Consultar el punto de retorno a CABA
     mas cercano al destino
