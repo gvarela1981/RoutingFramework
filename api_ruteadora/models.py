@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.contrib.gis.db import models
 from django.conf import settings
 from django.db.models import Manager as GeoManager
+from django.contrib.gis.geos import GEOSGeometry
 # from commons.commons import normalizar_texto, armarRespuestaGeoLayer, ObjectContent
 # from util.geoUtils import normalizarGeocodificarYConsultarDelimitaciones
 # from api.settings import DATE_FORMAT_MF
