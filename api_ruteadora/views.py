@@ -17,7 +17,7 @@ from django.shortcuts import render
 from django.conf import settings
 # para implementar la vista de idex
 from django.http import HttpResponse
-from api_ruteadora.models import Endpoint, Costo, Ruteo
+from api_ruteadora.models import Endpoint, Costo, Ruteo, Comuna
 
 import json as simplejson
 # from commons.commons import aplicar_callback
@@ -254,6 +254,28 @@ def getRuteo(loc, headers):
     return response
 
 def destinoIsInCaba(destino, headers):
+    """
+    Consulta si el destino se encuentra dentro de CABA
+    o si se debe calcular los costos de retorno a CABA
+    """
+    x, y, srid = destino[1], destino[0], 97433
+    print('nuevo destino ...')
+    iDestino = Comuna.busquedaGeografica(x, y, srid, 0)
+    print('respuesta destino')
+    print(type(iDestino))
+    print(iDestino)
+    #resultado_du = response.json()
+
+    comuna = iDestino['comuna']
+    print(comuna)
+
+    if(resultado_du['comuna'] == ''):
+        destinoInCABA = False
+    else:
+        destinoInCABA = True
+    return destinoInCABA
+
+def destinoIsInCaba_old(destino, headers):
     """
     Consulta si el destino se encuentra dentro de CABA
     o si se debe calcular los costos de retorno a CABA

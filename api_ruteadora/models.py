@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.contrib.gis.db import models
 from django.conf import settings
 from django.db.models import Manager as GeoManager
-from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.geos import GEOSGeometry, Point
 # from commons.commons import normalizar_texto, armarRespuestaGeoLayer, ObjectContent
 # from util.geoUtils import normalizarGeocodificarYConsultarDelimitaciones
 # from api.settings import DATE_FORMAT_MF
@@ -169,6 +169,8 @@ class Ruteo(models.Model):
 				punto.transform(settings.SRID)
 			if radio:
 				punto_con_buffer = punto.buffer(radio)
+			else:
+				punto_con_buffer = punto
 			return Ruteo.objects.filter(the_geom__intersects=punto_con_buffer)
 		except Exception as e:
 			print(e)
@@ -179,3 +181,124 @@ class Ruteo(models.Model):
 		#ScheduleFTS.grabarDelete(self.dame_info_buscable())
 		#ScheduleFTS.ejecutarAcciones()
 		super(Ruteo, self).delete()
+class Comuna(models.Model):
+    nombre = models.CharField('Nombre', max_length=30, null=False, blank=False)
+    nombre_original = models.CharField('Nombre Original', max_length=30, null=False, blank=True)
+    barrios = models.CharField('Barrios', max_length=100, null=False, blank=True)
+    the_geom = models.MultiPolygonField('geometría', null=True, blank=True, srid=settings.SRID)
+    timestamp_alta = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de alta')
+    timestamp_modificacion = models.DateTimeField(auto_now=True, verbose_name='Fecha de última modificación')
+    observaciones_publicables = models.TextField('observaciones publicables', null=False, blank=True, max_length=1000)
+    observaciones_privadas = models.TextField('observaciones privadas', null=False, blank=True, max_length=1000)
+    publicable = models.BooleanField('publicable', default=True)
+    verificado = models.BooleanField('verificado', default=True)
+    objects = GeoManager()
+
+    class Meta:
+        ordering = ['nombre']
+        verbose_name = 'Comuna'
+        verbose_name_plural = 'Comunas'
+
+    def __str__(self):
+        return '%s' % (self.nombre)
+
+    def save(self, *args, **kwargs):
+        if self.the_geom and isinstance(self.the_geom, Polygon):
+            self.the_geom = MultiPolygon(self.the_geom)
+        super(Comuna, self).save(*args, **kwargs)
+        ScheduleFTS.grabarUpsert(self.dame_info_buscable())
+#        #return resultadoOK, resultado
+        return True, dict()  # TODO: ver esto
+
+    @classmethod
+    def getGeoLayer(cls, **kwargs):
+        if 'comunas' in kwargs:
+            comunas = ['Comuna ' + str(x) for x in parsear_csi_input(kwargs['comunas'])]
+            res = cls.objects.filter(publicable=True, nombre__in=comunas)
+        else:
+            res = cls.objects.filter(publicable=True)
+        formato_datos = ['Id', 'Nombre', 'Comuna', 'Geom']
+        datos = []
+        for r in res:
+            datos.append([str(r.id), r.__str__(), r.__str__().replace('Comuna ', ''), r.the_geom])
+        ### test gonzalo varela
+        print('xxxxxxxxx ACA')
+        print(datos)
+        ### fin test gonzalo varela
+        #return armarRespuestaGeoLayer(datos, formato_datos, **kwargs)
+
+    @classmethod
+    # dado un id de objeto, devuelve un diccionario con el contenido del objeto y otros datos
+    # el llamador luego agregará más datos según datos de la API
+    def getObjectContent(cls, id):
+        try:
+            obj = cls.objects.filter(publicable=True).get(id=id)
+        except:
+            return {}
+
+        res = dict()
+        obj_cont = ObjectContent([
+                                 ['nombre', 'Nombre', obj.__str__()],
+                                 ])
+        res['contenido'] = obj_cont.dame_detalle()
+        res['fechaAlta'] = obj.timestamp_alta.strftime(DATE_FORMAT_MF)
+        res['ubicacion'] = {'centroide': obj.the_geom.centroid.wkt if obj.the_geom else '', 'tipo': 'Punto'}
+        res['fechaUltimaModificacion'] = obj.timestamp_modificacion.strftime(DATE_FORMAT_MF)
+        res['id'] = str(obj.id)
+        res['direccionNormalizada'] = ''
+        return res
+
+
+    def dame_info_buscable(self):
+        return {'categoria_normalizada': 'comunas',
+                'id_objeto': self.id,
+                'nombre_objeto': self.__str__(),
+                'clase': 'Comuna',
+                'id_clase': '1',
+                'the_geom': self.the_geom.centroid if self.the_geom else '',
+                'array_fts': [str(self.nombre), '', '', ''],
+                'publicable': self.publicable,
+                'autoindexar_metadatos': False,
+                }
+    @classmethod
+    def dame_objetos_buscables(cls):
+        return cls.objects.all()
+    def delete(self):
+        ScheduleFTS.grabarDelete(self.dame_info_buscable())
+        super(Comuna, self).delete()
+
+    @classmethod
+    def busquedaGeografica(cls, x, y, srid, radio):
+    	try:
+    		punto = GEOSGeometry('SRID={2};POINT({0} {1})'.format(x, y, srid))
+    		puntoH = GEOSGeometry('SRID=97433;POINT(-58.521958 -34.590973)'.format(x, y, srid))
+    		puntoH = puntoH.buffer(1)
+    		if srid != settings.SRID:
+    			print('forzando srid')
+    			punto.transform(settings.SRID)
+    		if not radio or radio == 0:
+    			# postigs solo intersecta poli con poli o punto con punto
+    			punto_con_buffer = punto.buffer(1) 
+    		else:
+    			punto_con_buffer = punto.buffer(radio)
+    		print('XXXXXXXXXXXXx ACA')
+    		poly = Comuna.objects.filter(id=15)
+    		poly = poly[0].the_geom
+    		result = Comuna.objects.filter(the_geom__intersects=punto_con_buffer)
+    		print('punto generado desde django + buffer intersect poligono de la db')
+    		print(result)
+    		result = Comuna.objects.filter(the_geom__intersects=puntoH)
+    		print('punto hardcodeado desde django + buffer intersect poligono de la db')
+    		print(result)
+    		puntoDbBuf = Comuna.objects.filter(id=999999)
+    		puntoDbBuf = puntoDbBuf[0].the_geom
+    		result = Comuna.objects.filter(the_geom__intersects=puntoDbBuf)
+    		print('punto traido de la DB + buffer en django intersect poligono de la db')
+    		print(result[0].barrios)
+    		result = Comuna.objects.filter(the_geom__intersects=poly)
+    		print('poligono traido de la db intersects poligono de la  db')
+    		print(result)
+    		#return Comuna.objects.filter(the_geom__intersects=punto_con_buffer)
+    	except Exception as e:
+    		print(e)
+    		return {}

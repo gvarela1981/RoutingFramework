@@ -55,3 +55,23 @@ admin.site.register(Endpoint)
 admin.site.register(Costo)
 admin.site.register( Ruteo, RuteoAdmin)
 
+class ComunaAdmin(LeafletGeoAdmin):
+    default_zoom = 1
+    modifiable = True
+    default_lon = 101780
+    default_lat = 101900
+    map_srid = settings.SRID
+    readonly_fields=('id', 'timestamp_alta', 'timestamp_modificacion')
+    search_fields = ('nombre', 'nombre_original')
+    fieldsets = [
+        ('Informacion básica', {'fields': ['nombre','nombre_original', 'barrios']}),
+        ('Informacion de la Ubicación',   {'fields': ['the_geom']}),
+        ('Misc',   {'fields': ['observaciones_publicables', 'observaciones_privadas', 'timestamp_alta','timestamp_modificacion', 'publicable', 'verificado']})]
+    list_display = [f.name for f in Comuna._meta.fields if f.name not in ('the_geom')]
+    list_display_links = ['id', 'nombre']
+    ordering = ["-id"]
+    list_filter = ['publicable', 'verificado', ]
+    date_hierarchy = 'timestamp_modificacion'
+    actions = [setear_publicable, setear_no_publicable, setear_verificado, setear_no_verificado]
+
+admin.site.register(Comuna, ComunaAdmin)
