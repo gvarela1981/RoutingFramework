@@ -149,7 +149,6 @@ def armarRespuestaPuntos(datos,gml):
         print('debaguear')
 
         response = getRuteo(ruteoRetornoCABA, headers)
-        print('respuesta recibida')
         resultado = response.json()
         print('resultado gml')
         retorno_caba_distance = resultado['route_summary']['total_distance']
@@ -260,16 +259,8 @@ def destinoIsInCaba(destino, headers):
     """
     x, y, srid = destino[1], destino[0], 97433
     print('nuevo destino ...')
-    iDestino = Comuna.busquedaGeografica(x, y, srid, 0)
-    print('respuesta destino')
-    print(type(iDestino))
-    print(iDestino)
-    #resultado_du = response.json()
-
-    comuna = iDestino['comuna']
-    print(comuna)
-
-    if(resultado_du['comuna'] == ''):
+    comuna = Comuna.busquedaGeografica(x, y, srid, 0)
+    if(comuna == ' '):
         destinoInCABA = False
     else:
         destinoInCABA = True

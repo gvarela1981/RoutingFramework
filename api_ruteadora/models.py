@@ -270,35 +270,22 @@ class Comuna(models.Model):
     @classmethod
     def busquedaGeografica(cls, x, y, srid, radio):
     	try:
-    		punto = GEOSGeometry('SRID={2};POINT({0} {1})'.format(x, y, srid))
-    		puntoH = GEOSGeometry('SRID=97433;POINT(-58.521958 -34.590973)'.format(x, y, srid))
-    		puntoH = puntoH.buffer(1)
-    		if srid != settings.SRID:
-    			print('forzando srid')
-    			punto.transform(settings.SRID)
-    		if not radio or radio == 0:
-    			# postigs solo intersecta poli con poli o punto con punto
-    			punto_con_buffer = punto.buffer(1) 
-    		else:
-    			punto_con_buffer = punto.buffer(radio)
-    		print('XXXXXXXXXXXXx ACA')
-    		poly = Comuna.objects.filter(id=15)
-    		poly = poly[0].the_geom
-    		result = Comuna.objects.filter(the_geom__intersects=punto_con_buffer)
-    		print('punto generado desde django + buffer intersect poligono de la db')
-    		print(result)
-    		result = Comuna.objects.filter(the_geom__intersects=puntoH)
-    		print('punto hardcodeado desde django + buffer intersect poligono de la db')
-    		print(result)
-    		puntoDbBuf = Comuna.objects.filter(id=999999)
-    		puntoDbBuf = puntoDbBuf[0].the_geom
-    		result = Comuna.objects.filter(the_geom__intersects=puntoDbBuf)
-    		print('punto traido de la DB + buffer en django intersect poligono de la db')
-    		print(result[0].barrios)
-    		result = Comuna.objects.filter(the_geom__intersects=poly)
-    		print('poligono traido de la db intersects poligono de la  db')
-    		print(result)
-    		#return Comuna.objects.filter(the_geom__intersects=punto_con_buffer)
+    		#punto = GEOSGeometry('SRID={2};POINT({0} {1})'.format(x, y, srid))
+    		# Generamos el punt con srid = 4326 de forma 
+    		# consistente con el formato de coordenadas aceptado
+    		punto = GEOSGeometry('SRID={2};POINT({1} {0})'.format(y, x, 4326))
+    		punto.transform(settings.SRID)
+    		if radio and radio is not 0:
+    			punto = punto.buffer(radio)
+    		response = []
+    		result = Comuna.objects.filter(the_geom__intersects=punto)
+    		if len(result) > 0:
+	    		for e in result:
+	    			response.append(e.barrios)
+	    	# Si no pertenece a caba se devuelve un espacio en blanco
+	    	else:
+	    		response.append(' ')
+    		return response[0]
     	except Exception as e:
     		print(e)
     		return {}
