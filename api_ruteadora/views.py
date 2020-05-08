@@ -258,31 +258,8 @@ def destinoIsInCaba(destino, headers):
     o si se debe calcular los costos de retorno a CABA
     """
     x, y, srid = destino[1], destino[0], 97433
-    print('nuevo destino ...')
     comuna = Comuna.busquedaGeografica(x, y, srid, 0)
     if(comuna == ' '):
-        destinoInCABA = False
-    else:
-        destinoInCABA = True
-    return destinoInCABA
-
-def destinoIsInCaba_old(destino, headers):
-    """
-    Consulta si el destino se encuentra dentro de CABA
-    o si se debe calcular los costos de retorno a CABA
-    """
-    # url = server_datos_utiles + '?x=' + loc[5][1] + '&y=' + loc[5][0]
-    mensaje = '?x=' + destino[1] + '&y=' + destino[0]
-    url = server_datos_utiles + mensaje
-    # Realizamos la consulta
-    response = requests.request('GET', url, headers=headers, allow_redirects=False)
-    
-    resultado_du = response.json()
-
-    comuna = resultado_du['comuna']
-    print(comuna)
-
-    if(resultado_du['comuna'] == ''):
         destinoInCABA = False
     else:
         destinoInCABA = True
