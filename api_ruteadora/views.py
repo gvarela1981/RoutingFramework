@@ -136,13 +136,16 @@ def armarRespuestaPuntos(datos,gml):
 
         # Consultar punto de retorno a CABA
         response = getRetornoCABA(destino, headers)
+        print(response)
         
-        resultado_du = response.json() # metodo original
-        #resultado_du = response # metodo nuevo
+        #resultado_du = response.json() # metodo original
+        resultado_du = response # metodo nuevo
                 
         # Formateando el punto de retornoCABA para el ruteo
-        retornoCABA = (resultado_du[0]['latitud'], resultado_du[0]['longitud'])
+        retornoCABA = (resultado_du['latitud'], resultado_du['longitud'])
+        print(retornoCABA)
         ruteoRetornoCABA = [destino]
+        print(ruteoRetornoCABA)
         # ruteoRetornoCABA.append(retornoCABA)
         ruteoRetornoCABA.append([retornoCABA[0], retornoCABA[1], str(retornoCABA[0] + "," + retornoCABA[1])])
         
@@ -270,27 +273,25 @@ def getRetornoCABA(destino, qheaders):
     Consultar el punto de retorno a CABA
     mas cercano al destino
     """
+    # Composición del punto
+    x, y, srid = destino[1], destino[0], 97433
+    retorno = Ruteo.busquedaGeografica(x, y, srid, 0)
+    
+    return retorno
+
+def getRetornoCABA_old(destino, qheaders):
+    """
+    Consultar el punto de retorno a CABA
+    mas cercano al destino
+    """
     # Composición de la url
     # url_punto_retorno = server_retorno_caba + '?x=' + loc[5][1] + '&y=' + loc[5][0] + '&formato=geojson'
     url_punto_retorno = server_retorno_caba + '?x=' + destino[1] + '&y=' + destino[0] + '&formato=geojson'
     
     # Realizamos la consulta de punto de retorno a CABA
     response = requests.request('GET', url_punto_retorno, headers=qheaders, allow_redirects=False)
+    print(type(response))
     return response
-
-def getRetornoCABA_new(destino, qheaders):
-    """
-    Consultar el punto de retorno a CABA
-    mas cercano al destino
-    """
-    # Composición del punto
-    iDestino = {'x': destino[1], 'y': destino[0]}
-    iDestino.update([('srid', 97433), ('formato', 'json')])
-    print(iDestino)
-    response = buscarInformacionRuteo(iDestino)
-    
-    return response
-
 
 def buscarInformacionRuteo(request):
     try:

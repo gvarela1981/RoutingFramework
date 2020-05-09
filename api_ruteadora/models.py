@@ -152,26 +152,30 @@ class Ruteo(models.Model):
 	            'publicable': self.publicable,
 	            'autoindexar_metadatos': True,
 	            }
-
-
-	@classmethod
-	def dame_objetos_buscables(cls):
-	    return cls.objects.all()
-
-
 	@classmethod
 	def busquedaGeografica(cls, x, y, srid, radio):
-
+		'''
+		Con una funcion ST_Intersect devuelve el punto 
+		de reingreso a CABA mas cercano al punto solicitado
+		'''
 		try:
-			punto = GEOSGeometry('SRID={2};POINT({0} {1})'.format(x, y, srid))
-
-			if srid != settings.SRID:
-				punto.transform(settings.SRID)
-			if radio:
-				punto_con_buffer = punto.buffer(radio)
+			#punto = GEOSGeometry('SRID={2};POINT({0} {1})'.format(x, y, srid))
+			# Generamos el punt con srid = 4326 de forma 
+			# consistente con el formato de coordenadas aceptado
+			punto = GEOSGeometry('SRID={2};POINT({1} {0})'.format(y, x, 4326))
+			punto.transform(settings.SRID)
+			if radio and radio is not 0:
+				punto = punto.buffer(radio)
+			response = {}
+			result = Ruteo.objects.filter(the_geom__intersects=punto)
+			if len(result) > 0:
+				for ele in result:
+					# Obtengo la columna latitud y longitud de la tabla Ruteos
+					response.update({'latitud': ele.latitud, 'longitud': ele.longitud})
+	    	# Si no pertenece a caba se devuelve un espacio en blanco
 			else:
-				punto_con_buffer = punto
-			return Ruteo.objects.filter(the_geom__intersects=punto_con_buffer)
+				response.update({'latitud': 0, 'longitud': 0})
+			return response
 		except Exception as e:
 			print(e)
 			return {}
