@@ -20,6 +20,7 @@ from django.http import HttpResponse
 from api_ruteadora.models import Endpoint, Costo, Ruteo, Comuna
 
 import json as simplejson
+import datetime
 # from commons.commons import aplicar_callback
 # from commons.commons import armarEstructuraGeoLayer
 from django.contrib.gis.geos import GEOSGeometry
@@ -148,8 +149,12 @@ def armarRespuestaPuntos(datos,gml):
         response = getRuteo(ruteoRetornoCABA, headers)
         resultado = response.json()
         print('resultado gml')
+
         retorno_caba_distance = resultado['route_summary']['total_distance']
         retorno_caba_time = resultado['route_summary']['total_time']
+        
+        # Calcular el costo del retorno a CABA
+        retorno_caba_tarifa = getCostoViaje(retorno_caba_distance)
 
     #el punto final esta dentro de caba
     else:
@@ -158,8 +163,15 @@ def armarRespuestaPuntos(datos,gml):
 
     resultado_json = {}
 
+    # Calcular el costo del viaje
+    total_cost = getCostoViaje(total_distance)
+
     resultado_json["total_time"] = total_time
+    resultado_json["total_tiempo"] = total_time
     resultado_json["total_distance"] = total_distance
+    resultado_json["total_distancia"] = total_distance
+    resultado_json["total_tarifa"] = total_cost
+    resultado_json["retorno_caba_tarifa"] = retorno_caba_tarifa
     resultado_json["return_caba_time"] = retorno_caba_time
     resultado_json["return_caba_distance"] = retorno_caba_distance
     if gml=='1':
@@ -370,3 +382,32 @@ def buscarInformacionRuteo(request):
         response = simplejson.dumps({'error': e.__str__()})
         response = aplicar_callback(response, callback)
         return HttpResponse(response, mimetype="application/json")
+def getBandaHoraria():
+    Hora = datetime.datetime.now().time()
+    if(Hora > inicio_servicio_diurno and Hora < inicio_servicio_nocturno):
+        return 'diurna'
+    else:
+        return 'nocturna'
+def getCostoViaje(total_distance):
+    '''
+    Se retorna el costo diurno y nocturno
+    debido a que el horario del calculo y del inicio del viaje
+    puede diferir
+    '''
+    costo = 0
+    tarifa_diurna_en_centavos = valor_ficha_diurna * 100
+    tarifa_nocturna_en_centavos = valor_ficha_nocturna * 100
+    # Distancia en que se agrega una ficha
+    # hardcodeada para pruebas hasta recibir el valor correcto
+    distancia_por_ficha = 100
+
+    costo_diurno_sin_bajada_bandera = ((tarifa_diurna_en_centavos * total_distance) / tarifa_diurna_en_centavos + distancia_por_ficha) / 100
+    costo_nocturno_sin_bajada_bandera = ((tarifa_nocturna_en_centavos * total_distance) / tarifa_nocturna_en_centavos + distancia_por_ficha) / 100
+    costo_diurno = costo_diurno_sin_bajada_bandera + bajada_bandera_diurna * porcentaje_diurno_ajuste
+    costo_nocturno = (costo_nocturno_sin_bajada_bandera + bajada_bandera_diurna) * porcentaje_nocturno_ajuste
+    
+    if(getBandaHoraria() == 'diurna'):
+        costo = costo_diurno
+    else:
+        costo = costo_nocturno
+    return costo
