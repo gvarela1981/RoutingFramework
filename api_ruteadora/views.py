@@ -161,6 +161,7 @@ def armarRespuestaPuntos(datos,gml):
     else:
         retorno_caba_time = 0
         retorno_caba_distance = 0
+        retorno_caba_tarifa = 0
 
     resultado_json = {}
 
