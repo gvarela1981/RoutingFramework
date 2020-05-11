@@ -39,6 +39,7 @@ class Costo(models.Model):
 	valor_ficha_nocturna = models.FloatField('Valor de ficha nocturna', default=46)
 	porcentaje_diurno_ajuste = models.FloatField('Porcentaje de ajuste diurno', default=20)
 	porcentaje_nocturno_ajuste = models.FloatField('Porcentaje de ajuste nocturno', default=20)
+	distancia_por_ficha = models.FloatField('Distancia en la que se consume una ficha', default=100)
 	
 	fecha_creacion = models.DateTimeField('Fecha de Creacion', auto_now_add=True)
 	fecha_modificacion = models.DateTimeField('Fecha de Modificacion',  default=timezone.now)

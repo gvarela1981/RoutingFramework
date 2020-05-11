@@ -49,6 +49,7 @@ valor_ficha_diurna = objSettings.values_list('valor_ficha_diurna', flat=True).fi
 valor_ficha_nocturna = objSettings.values_list('valor_ficha_nocturna', flat=True).first()
 porcentaje_diurno_ajuste = objSettings.values_list('porcentaje_diurno_ajuste', flat=True).first()
 porcentaje_nocturno_ajuste = objSettings.values_list('porcentaje_nocturno_ajuste', flat=True).first()
+distancia_por_ficha = objSettings.values_list('distancia_por_ficha', flat=True).first()
 
 # index
 
@@ -399,9 +400,6 @@ def getCostoViaje(total_distance):
     costo = 0
     tarifa_diurna_en_centavos = valor_ficha_diurna * 100
     tarifa_nocturna_en_centavos = valor_ficha_nocturna * 100
-    # Distancia en que se agrega una ficha
-    # hardcodeada para pruebas hasta recibir el valor correcto
-    distancia_por_ficha = 100
 
     costo_diurno_sin_bajada_bandera = ((tarifa_diurna_en_centavos * total_distance) / tarifa_diurna_en_centavos + distancia_por_ficha) / 100
     costo_nocturno_sin_bajada_bandera = ((tarifa_nocturna_en_centavos * total_distance) / tarifa_nocturna_en_centavos + distancia_por_ficha) / 100
