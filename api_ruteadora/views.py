@@ -116,46 +116,75 @@ def armarRespuestaPuntos(datos,gml):
     headers = {
         'Content-Type': 'application/json'
     }
+    isRuteoOK = True
 
     # valido los puntos ingresados
     loc = validarPuntos(puntos, headers)
     destino = loc[-1]
 
-    response = getRuteo(loc, headers)
-    resultado = response.json()
+    try:
+        response = getRuteo(loc, headers)
+        resultado = response.json()
+    except Exception as e:
+        print('Ruteo no recibido'+str(e))
+        isRuteoOK = False
     try:
         total_time = resultado['route_summary']['total_time']
         total_distance = resultado['route_summary']['total_distance']
     except Exception as e:
         print ('consulta rechazada en el server de ruteo: '+str(e))
+        isRuteoOK = False
 
     # Verificar si esta dentro o fuera de CABA el ultimo punto
     # si el ultimo punto esta fuera de caba se calcula el retorno
-    destinoInCABA = destinoIsInCaba(destino, headers)
-    print("destinoInCABA es", destinoInCABA)
+    try:
+        destinoInCABA = destinoIsInCaba(destino, headers)
+        print("destinoInCABA es", destinoInCABA)
+    except Exception as e:
+        print('Respuesta no recibida de destino en CABA'+str(e))
 
     if (destinoInCABA is False):
 
         # Consultar punto de retorno a CABA
-        response = getRetornoCABA(destino, headers)
-        resultado_du = response 
+        try:
+            response = getRetornoCABA(destino, headers)
+            resultado_du = response 
+        except Exception as e:
+            print('No se recibio respuesta de Retorno a CABA'+str(e))
                 
         # Formateando el punto de retornoCABA para el ruteo
-        retornoCABA = (resultado_du['latitud'], resultado_du['longitud'])
+        try:
+            retornoCABA = (resultado_du['latitud'], resultado_du['longitud'])
+        except Exception as e:
+            print('La respuesta de Retorno a CABA no continene latitudo y/o longitud'+str(e))
+            isRuteoOK = False
+
         ruteoRetornoCABA = [destino]
         ruteoRetornoCABA.append([retornoCABA[0], retornoCABA[1], str(retornoCABA[0] + "," + retornoCABA[1])])
         
         print('debaguear')
 
-        response = getRuteo(ruteoRetornoCABA, headers)
-        resultado = response.json()
+        try:
+            response = getRuteo(ruteoRetornoCABA, headers)
+            resultado = response.json()
+        except Exception as e:
+            print('No se recibió respuesta de Ruteo'+str(e))
+            isRuteoOK = False
         print('resultado gml')
 
-        retorno_caba_distance = resultado['route_summary']['total_distance']
-        retorno_caba_time = resultado['route_summary']['total_time']
+        try:
+            retorno_caba_distance = resultado['route_summary']['total_distance']
+            retorno_caba_time = resultado['route_summary']['total_time']
+        except Exception as e:
+            print('La respuesta de Ruteo no continene la distancia o el tiempo total'+str(e))
+            isRuteoOK = False
         
         # Calcular el costo del retorno a CABA
-        retorno_caba_tarifa = getCostoViaje(retorno_caba_distance)
+        try:
+            retorno_caba_tarifa = getCostoViaje(retorno_caba_distance)
+        except Exception as e:
+            print('No se recibió el costo de retorno a CABA'+str(e))
+            isRuteoOK = False
 
     #el punto final esta dentro de caba
     else:
@@ -164,27 +193,42 @@ def armarRespuestaPuntos(datos,gml):
         retorno_caba_tarifa = 0
 
     resultado_json = {}
+    if(isRuteoOK):
+        # Calcular el costo del viaje
+        total_cost = getCostoViaje(total_distance)
 
-    # Calcular el costo del viaje
-    total_cost = getCostoViaje(total_distance)
+        resultado_json["total_time"] = total_time
+        resultado_json["total_distance"] = total_distance
+        resultado_json["return_caba_time"] = retorno_caba_time
+        resultado_json["return_caba_distance"] = retorno_caba_distance
+        resultado_json["total_tiempo"] = total_time
+        resultado_json["total_distancia"] = total_distance
+        resultado_json["retorno_caba_tiempo"] = retorno_caba_time
+        resultado_json["retorno_caba_distancia"] = retorno_caba_distance
+        resultado_json["total_tarifa"] = total_cost
+        resultado_json["retorno_caba_tarifa"] = retorno_caba_tarifa
+        if gml=='1':
+            resultado_json["gml"] = resultado
 
-    resultado_json["total_time"] = total_time
-    resultado_json["total_distance"] = total_distance
-    resultado_json["return_caba_time"] = retorno_caba_time
-    resultado_json["return_caba_distance"] = retorno_caba_distance
-    resultado_json["total_tiempo"] = total_time
-    resultado_json["total_distancia"] = total_distance
-    resultado_json["retorno_caba_tiempo"] = retorno_caba_time
-    resultado_json["retorno_caba_distancia"] = retorno_caba_distance
-    resultado_json["total_tarifa"] = total_cost
-    resultado_json["retorno_caba_tarifa"] = retorno_caba_tarifa
-    if gml=='1':
-        resultado_json["gml"] = resultado
+        resul = resultado_json
+        print(resul)
 
-    resul = resultado_json
-    print(resul)
+        return JsonResponse(resul)
+    else:
+        # Asegurar una respuesta y fin de consulta limpia
+        # Si no se puede calcular el retorno no enviar costos
+        resultado_json["total_time"] = 0
+        resultado_json["total_distance"] = 0
+        resultado_json["return_caba_time"] = 0
+        resultado_json["return_caba_distance"] = 0
+        resultado_json["total_tiempo"] = 0
+        resultado_json["total_distancia"] = 0
+        resultado_json["retorno_caba_tiempo"] = 0
+        resultado_json["retorno_caba_distancia"] = 0
+        resultado_json["total_tarifa"] = 0
+        resultado_json["retorno_caba_tarifa"] = 0
+        resultado_json["mensaje"] = 'No se pudo calcular la ruta, verifique el orien y el destino'
 
-    return JsonResponse(resul)
 
 def consultarPuntos(request):
     """Funcion que es llamada desde el ruteador con la url calculo_ruta. Filtra y analiza el contenido
