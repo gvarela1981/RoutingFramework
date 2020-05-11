@@ -167,13 +167,15 @@ def armarRespuestaPuntos(datos,gml):
     total_cost = getCostoViaje(total_distance)
 
     resultado_json["total_time"] = total_time
-    resultado_json["total_tiempo"] = total_time
     resultado_json["total_distance"] = total_distance
-    resultado_json["total_distancia"] = total_distance
-    resultado_json["total_tarifa"] = total_cost
-    resultado_json["retorno_caba_tarifa"] = retorno_caba_tarifa
     resultado_json["return_caba_time"] = retorno_caba_time
     resultado_json["return_caba_distance"] = retorno_caba_distance
+    resultado_json["total_tiempo"] = total_time
+    resultado_json["total_distancia"] = total_distance
+    resultado_json["retorno_caba_tiempo"] = retorno_caba_time
+    resultado_json["retorno_caba_distancia"] = retorno_caba_distance
+    resultado_json["total_tarifa"] = total_cost
+    resultado_json["retorno_caba_tarifa"] = retorno_caba_tarifa
     if gml=='1':
         resultado_json["gml"] = resultado
 
