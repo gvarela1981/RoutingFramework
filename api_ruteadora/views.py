@@ -40,14 +40,14 @@ server_retorno_caba = objRuteo.values_list('url', flat=True).first()
 
 MAX_POINTS = settings.MAX_POINTS if hasattr(settings, 'MAX_POINTS') else 0
 objSettings = Costo.objects.filter(nombre='Costo')
-INICIO_SERVICIO_DIURNO = objSettings.values_list('INICIO_SERVICIO_DIURNO', flat=True).first()
-INICIO_SERVICIO_NOCTURNO = objSettings.values_list('INICIO_SERVICIO_NOCTURNO', flat=True).first()
-BAJADA_BANDERA_DIURNA = objSettings.values_list('BAJADA_BANDERA_DIURNA', flat=True).first()
-BAJADA_BANDERA_NOCTURNA = objSettings.values_list('BAJADA_BANDERA_NOCTURNA', flat=True).first()
-VALOR_FICHA_DIURNA = objSettings.values_list('VALOR_FICHA_DIURNA', flat=True).first()
-VALOR_FICHA_NOCTURNA = objSettings.values_list('VALOR_FICHA_NOCTURNA', flat=True).first()
-PORCENTAJE_DIURNO_AJUSTE = objSettings.values_list('PORCENTAJE_DIURNO_AJUSTE', flat=True).first()
-PORCENTAJE_NOCTURNO_AJUSTE = objSettings.values_list('PORCENTAJE_NOCTURNO_AJUSTE', flat=True).first()
+inicio_servicio_diurno = objSettings.values_list('inicio_servicio_diurno', flat=True).first()
+inicio_servicio_nocturno = objSettings.values_list('inicio_servicio_nocturno', flat=True).first()
+bajada_bandera_diurna = objSettings.values_list('bajada_bandera_diurna', flat=True).first()
+bajada_bandera_nocturna = objSettings.values_list('bajada_bandera_nocturna', flat=True).first()
+valor_ficha_diurna = objSettings.values_list('valor_ficha_diurna', flat=True).first()
+valor_ficha_nocturna = objSettings.values_list('valor_ficha_nocturna', flat=True).first()
+porcentaje_diurno_ajuste = objSettings.values_list('porcentaje_diurno_ajuste', flat=True).first()
+porcentaje_nocturno_ajuste = objSettings.values_list('porcentaje_nocturno_ajuste', flat=True).first()
 
 # index
 
