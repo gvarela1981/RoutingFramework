@@ -243,6 +243,8 @@ def consultarPuntos(request):
 	Si el request es correcto envía los datos para su calculo
 	Formato:
 	origen=x,y&punto1=x,y&punto2=x,y&punto3=x,y&destino=x,y
+    varialble requerida: origen, destino
+    variable opcional: punto1, punto2, punto3
 	'''
 	requestOk = False
 	datos = []
