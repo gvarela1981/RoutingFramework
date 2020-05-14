@@ -25,31 +25,37 @@ import datetime
 # from commons.commons import armarEstructuraGeoLayer
 from django.contrib.gis.geos import GEOSGeometry
 
+# mensaje a devolver en el json cuando se produce un error
+mensaje_error = ''
 #APIs que se consumen, despues de actualizarlas se debe reiniciar servicio
-#Server de ruteo
-objRuteo = Endpoint.objects.filter(nombre='Ruteo')
-server = objRuteo.values_list('url', flat=True).first()
-#server datos utiles
-objRuteo = Endpoint.objects.filter(nombre='Destino en CABA')
-server_datos_utiles = objRuteo.values_list('url', flat=True).first()
-#Server autopista
-objRuteo = Endpoint.objects.filter(nombre='Filtro de Autopista')
-server_no_autopista = objRuteo.values_list('url', flat=True).first()
-#Server de retorno a caba
-objRuteo = Endpoint.objects.filter(nombre='Retorno a CABA')
-server_retorno_caba = objRuteo.values_list('url', flat=True).first()
+try:
+    #Server de ruteo
+    objRuteo = Endpoint.objects.filter(nombre='Ruteo')
+    server = objRuteo.values_list('url', flat=True).first()
+    #Server autopista
+    objRuteo = Endpoint.objects.filter(nombre='Filtro de Autopista')
+    server_no_autopista = objRuteo.values_list('url', flat=True).first()
+except Exception as e:
+    mensaje_error += '\nSe produjo un error al obtener las direcciones de las API externas para realizar los calculos'
+    print(mensaje_error+str(e))
+    isRuteoOK = False
 
-MAX_POINTS = settings.MAX_POINTS if hasattr(settings, 'MAX_POINTS') else 0
-objSettings = Costo.objects.filter(nombre='Costo')
-inicio_servicio_diurno = objSettings.values_list('inicio_servicio_diurno', flat=True).first()
-inicio_servicio_nocturno = objSettings.values_list('inicio_servicio_nocturno', flat=True).first()
-bajada_bandera_diurna = objSettings.values_list('bajada_bandera_diurna', flat=True).first()
-bajada_bandera_nocturna = objSettings.values_list('bajada_bandera_nocturna', flat=True).first()
-valor_ficha_diurna = objSettings.values_list('valor_ficha_diurna', flat=True).first()
-valor_ficha_nocturna = objSettings.values_list('valor_ficha_nocturna', flat=True).first()
-porcentaje_diurno_ajuste = objSettings.values_list('porcentaje_diurno_ajuste', flat=True).first()
-porcentaje_nocturno_ajuste = objSettings.values_list('porcentaje_nocturno_ajuste', flat=True).first()
-distancia_por_ficha = objSettings.values_list('distancia_por_ficha', flat=True).first()
+MAX_POINTS = settings.MAX_POINTS if hasattr(settings, 'MAX_POINTS') else 10
+try:
+    objSettings = Costo.objects.filter(nombre='Costo')
+    inicio_servicio_diurno = objSettings.values_list('inicio_servicio_diurno', flat=True).first()
+    inicio_servicio_nocturno = objSettings.values_list('inicio_servicio_nocturno', flat=True).first()
+    bajada_bandera_diurna = objSettings.values_list('bajada_bandera_diurna', flat=True).first()
+    bajada_bandera_nocturna = objSettings.values_list('bajada_bandera_nocturna', flat=True).first()
+    valor_ficha_diurna = objSettings.values_list('valor_ficha_diurna', flat=True).first()
+    valor_ficha_nocturna = objSettings.values_list('valor_ficha_nocturna', flat=True).first()
+    porcentaje_diurno_ajuste = objSettings.values_list('porcentaje_diurno_ajuste', flat=True).first()
+    porcentaje_nocturno_ajuste = objSettings.values_list('porcentaje_nocturno_ajuste', flat=True).first()
+    distancia_por_ficha = objSettings.values_list('distancia_por_ficha', flat=True).first()
+except Exception as e:
+    mensaje_error += '\nSe produjo un error al obtener valor de los costos'
+    print(mensaje_error+str(e))
+    isRuteoOK = False
 
 # index
 
@@ -176,14 +182,16 @@ def armarRespuestaPuntos(datos,gml):
             retorno_caba_distance = resultado['route_summary']['total_distance']
             retorno_caba_time = resultado['route_summary']['total_time']
         except Exception as e:
-            print('La respuesta de Ruteo no continene la distancia o el tiempo total'+str(e))
+            mensaje_error += '\nLa respuesta de Ruteo no continene la distancia o el tiempo total'
+            print(mensaje_error+str(e))
             isRuteoOK = False
         
         # Calcular el costo del retorno a CABA
         try:
             retorno_caba_tarifa = getCostoViaje(retorno_caba_distance)
         except Exception as e:
-            print('No se recibió el costo de retorno a CABA'+str(e))
+            mensaje_error += '\nNo se recibió el costo de retorno a CABA'
+            print(mensaje_error+str(e))
             isRuteoOK = False
 
     #el punto final esta dentro de caba
@@ -227,7 +235,7 @@ def armarRespuestaPuntos(datos,gml):
         resultado_json["retorno_caba_distancia"] = 0
         resultado_json["total_tarifa"] = 0
         resultado_json["retorno_caba_tarifa"] = 0
-        resultado_json["mensaje"] = 'No se pudo calcular la ruta, verifique el orien y el destino'
+        resultado_json["mensaje"] = mensaje_error
 
 
 def consultarPuntos(request):
