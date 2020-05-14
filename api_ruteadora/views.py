@@ -267,7 +267,6 @@ def consultarPuntos(request):
 	
 	# verifica que request tenga origen y destino
 	if(len(origen) and len(destino)):
-		print('hay origen y destino')
 		origenLatLon = origen[0].split(',')
 		destinoLatLon = destino[0].split(',')
 		# verifica que origen y destino tenga exactamente 2 coordenadas separadas por coma
@@ -292,9 +291,6 @@ def consultarPuntos(request):
 		else:
 			mensaje_error = 'El valor de origen y/o destino no es correcto. Por favor verifique los valores.'
 			print(mensaje_error)
-		
-		print('datos')
-		print(datos)
 	else:
 		mensaje_error = 'No se recibio datos de origen y/o destino.'
 
@@ -308,61 +304,6 @@ def consultarPuntos(request):
 	 	resultado_json["mensaje"] = mensaje_error
 	 	resultado_json["error"] = True
 	 	return resultado_json
-def consultarPuntos_old(request):
-    """Funcion que es llamada desde el ruteador con la url calculo_ruta. Filtra y analiza el contenido
-    del request para que la llamada a los servidores de ruteo sea consistente.
-
-    Args:
-        ``request (array)``:  request que puede contener el verbo POST o GET, que es una coleccion
-        de flotantes. Condicion: no puede contener menos de 4 parametros, ni mas de ``MAX_POINTS``.
-
-        ``gml (int)`` : Entero (0,1) que determina si en el json de salida se agrega o no la traza
-        calculada entregada por el server de ruteo en formato gml.
-
-    Returns:
-            ``json``
-    """
-    resultado_json = {}
-
-    if (request.POST):
-        #incluir el header crsf en la llamada ajax
-        datos = request.POST.getlist('data[]')
-        gml = request.POST.get('gml')
-    else:
-        datos = request.GET.getlist('data[]')
-        gml = request.GET.get('gml')
-    print('datos')
-    print(len(datos))
-    print(int(len(datos)/2))
-    # este filtrado tambien contempla la posibilidad de que no se utilice el nombre de lista data[] en algun parametro
-    # esta oriendado a un uso inadecuado por get desde el cgi
-    if (len(datos) < 4):
-        resultado_json["error"] = 'La llamada necesita al menos 2 coordenadas lat lon. Ej: http://$host/calculo_ruta?data[]=lat1&data[]=lon1&data[]=lat2&data[]=lon2&data[]=lat3&data[]=lon3&data[]=lat4&data[]=lon4&gml=1'
-        resul = resultado_json
-        return JsonResponse(resul)
-    else:
-        #mas de 2 coordenadas pero faltando un parametro, lat o lon
-        if (len(datos)%2 != 0):
-            resultado_json["error"] = 'La llamada no contiene una cantidad adecuada de pares ordenados'
-            resul = resultado_json
-            return JsonResponse(resul)
-        else:
-            # este error debe ser filtrado en el frontend especifico de este proyecto, ya que los demas errores
-            # de coordenadas no podrian presentarse en el caso de la definicion de puntos por drawtool leaflet
-            if (len(datos) / 2 > MAX_POINTS):
-                resultado_json["error"] = 'No ingrese mas de 10 puntos'
-                resul = resultado_json
-                return JsonResponse(resul)
-            else:
-                #gml = True
-                print('gmll crudo')
-                print(gml)
-                res = armarRespuestaPuntos(datos,gml)
-                return res
-    #else:
-      #  resultado_json["error"] = 'Error en el request'
-      #  resul = resultado_json
-      #  return JsonResponse(resul)
 
 def prepararMensajeRuteo(loc):
     """
