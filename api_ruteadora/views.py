@@ -237,8 +237,76 @@ def armarRespuestaPuntos(datos,gml):
         resultado_json["retorno_caba_tarifa"] = 0
         resultado_json["mensaje"] = mensaje_error
 
-
 def consultarPuntos(request):
+	'''
+	Recibe la peticion de ruteo y valida que el formato sea correcto
+	Si el request es correcto envía los datos para su calculo
+	Formato:
+	origen=x,y&punto1=x,y&punto2=x,y&punto3=x,y&destino=x,y
+	'''
+	requestOk = False
+	datos = []
+
+	if (request.POST):
+		#incluir el header crsf en la llamada ajax
+		origen = request.POST.getlist('origen')
+		punto1 = request.POST.getlist('punto1')
+		punto2 = request.POST.getlist('punto2')
+		punto3 = request.POST.getlist('punto3')
+		destino = request.POST.getlist('destino')
+		gml = request.POST.getlist('gml')
+	else:
+		origen = request.GET.getlist('origen')
+		punto1 = request.GET.getlist('punto1')
+		punto2 = request.GET.getlist('punto2')
+		punto3 = request.GET.getlist('punto3')
+		destino = request.GET.getlist('destino')
+		gml = request.GET.get('gml')
+	
+	# verifica que request tenga origen y destino
+	if(len(origen) and len(destino)):
+		print('hay origen y destino')
+		origenLatLon = origen[0].split(',')
+		destinoLatLon = destino[0].split(',')
+		# verifica que origen y destino tenga exactamente 2 coordenadas separadas por coma
+		if(len(origenLatLon) == 2 and len(destinoLatLon) == 2):
+			datos.append(origenLatLon[0])
+			datos.append(origenLatLon[1])
+			datos.append(destinoLatLon[0])
+			datos.append(destinoLatLon[1])
+			requestOk = True
+			print(datos)
+
+			# verificando valores de paradas intermedias para validar cada punto
+			paradas = [ punto3, punto2, punto1, ]
+			for coord in paradas:
+				# si hay un string en punto1 o punto2 o punto3 se analiza
+				if(len(coord) == 1):
+					coordLatLon = coord[0].split(',')
+					# si se tienen 2 coordenadas en el punto se agregan al listado de validacion de punto
+					if(len(coordLatLon) == 2):
+						datos.insert(2, coordLatLon[1])
+						datos.insert(2, coordLatLon[0])
+		else:
+			mensaje_error = 'El valor de origen y/o destino no es correcto. Por favor verifique los valores.'
+			print(mensaje_error)
+		
+		print('datos')
+		print(datos)
+	else:
+		mensaje_error = 'No se recibio datos de origen y/o destino.'
+
+	if(requestOk):
+	    #gml = True
+		print('gmll crudo')
+		print(gml)
+		res = armarRespuestaPuntos(datos,gml)
+		return res
+	else:
+	 	resultado_json["mensaje"] = mensaje_error
+	 	resultado_json["error"] = True
+	 	return resultado_json
+def consultarPuntos_old(request):
     """Funcion que es llamada desde el ruteador con la url calculo_ruta. Filtra y analiza el contenido
     del request para que la llamada a los servidores de ruteo sea consistente.
 
