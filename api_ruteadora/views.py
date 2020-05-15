@@ -365,12 +365,15 @@ def consultarCalculoRutaTarifa(request):
 	    	isRuteoOK = False
 
 	    # Calcular el costo del retorno a CABA
-	    try:
-	    	retorno_caba_tarifa = getCostoViaje(res['retorno_caba_distancia'])
-	    except Exception as e:
-	    	mensaje_error += '\nNo se recibió el costo de retorno a CABA'
-	    	print(mensaje_error+str(e))
-	    	isRuteoOK = False
+	    if(res['retorno_caba_distancia'] > 0):
+		    try:
+		    	retorno_caba_tarifa = getCostoViaje(res['retorno_caba_distancia'])
+		    except Exception as e:
+		    	mensaje_error += '\nNo se recibió el costo de retorno a CABA'
+		    	print(mensaje_error+str(e))
+		    	isRuteoOK = False
+	    else:
+	    	retorno_caba_tarifa = 0
 
 	    if(isRuteoOK):
 	    	res["total_tarifa"] = total_tarifa
@@ -535,7 +538,7 @@ def getBandaHoraria():
         return 'diurna'
     else:
         return 'nocturna'
-def getCostoViaje(total_distance):
+def getCostoViaje(total_distance, incluirBandera = False) :
     '''
     Se retorna el costo diurno y nocturno
     debido a que el horario del calculo y del inicio del viaje
@@ -547,9 +550,12 @@ def getCostoViaje(total_distance):
 
     costo_diurno_sin_bajada_bandera = ((tarifa_diurna_en_centavos * total_distance) / tarifa_diurna_en_centavos + distancia_por_ficha) / 100
     costo_nocturno_sin_bajada_bandera = ((tarifa_nocturna_en_centavos * total_distance) / tarifa_nocturna_en_centavos + distancia_por_ficha) / 100
-    costo_diurno = costo_diurno_sin_bajada_bandera + bajada_bandera_diurna * porcentaje_diurno_ajuste
-    costo_nocturno = (costo_nocturno_sin_bajada_bandera + bajada_bandera_diurna) * porcentaje_nocturno_ajuste
-    
+    costo_diurno = costo_diurno_sin_bajada_bandera * porcentaje_diurno_ajuste
+    costo_nocturno = costo_nocturno_sin_bajada_bandera * porcentaje_nocturno_ajuste
+    if(incluirBandera):
+    	costo_diurno = costo_diurno + bajada_bandera_diurna
+    	costo_nocturno = costo_nocturno + bajada_bandera_nocturna
+
     if(getBandaHoraria() == 'diurna'):
         costo = costo_diurno
     else:
