@@ -198,13 +198,10 @@ def armarRespuestaPuntos(datos,gml):
     else:
         retorno_caba_time = 0
         retorno_caba_distance = 0
-        retorno_caba_tarifa = 0
 
     resultado_json = {}
     if(isRuteoOK):
-        # Calcular el costo del viaje
-        total_cost = getCostoViaje(total_distance)
-
+        
         resultado_json["total_time"] = total_time
         resultado_json["total_distance"] = total_distance
         resultado_json["return_caba_time"] = retorno_caba_time
@@ -213,15 +210,14 @@ def armarRespuestaPuntos(datos,gml):
         resultado_json["total_distancia"] = total_distance
         resultado_json["retorno_caba_tiempo"] = retorno_caba_time
         resultado_json["retorno_caba_distancia"] = retorno_caba_distance
-        resultado_json["total_tarifa"] = total_cost
-        resultado_json["retorno_caba_tarifa"] = retorno_caba_tarifa
         if gml=='1':
             resultado_json["gml"] = resultado
 
         resul = resultado_json
         print(resul)
 
-        return JsonResponse(resul)
+        return resul
+        #return JsonResponse(resul)
     else:
         # Asegurar una respuesta y fin de consulta limpia
         # Si no se puede calcular el retorno no enviar costos
@@ -264,22 +260,22 @@ def consultarCalculoRuta(request):
 		parada3 = request.GET.getlist('parada3')
 		destino = request.GET.getlist('destino')
 		gml = request.GET.get('gml')
+	print('calculando ruta sin tarifa')
 	# verifica que request tenga origen y destino
 	response = verifcarRequest(origen, destino, parada1, parada2, parada3)
+	print(response)
 	datos = response['datos']
-	requestOk = response['requestOk']
-	mensaje_error = response['mensaje_error']
 	
-	if(requestOk):
+	if(response['requestOk']):
 	    #gml = True
 		print('gmll crudo')
 		print(gml)
 		res = armarRespuestaPuntos(datos,gml)
-		return res
+		return JsonResponse(res)
 	else:
 	 	resultado_json["mensaje"] = mensaje_error
 	 	resultado_json["error"] = True
-	 	return resultado_json
+	 	return JsonResponse(resultado_json)
 
 def verifcarRequest(origen, destino, parada1, parada2, parada3):
 	datos = []
@@ -317,6 +313,77 @@ def verifcarRequest(origen, destino, parada1, parada2, parada3):
 	response['datos'] = datos
 	response['requestOk'] = requestOk
 	return response
+
+def consultarCalculoRutaTarifa(request):
+	'''
+	Recibe la peticion de ruteo y valida que el formato sea correcto
+	Si el request es correcto envía los datos para su calculo
+	Formato:
+	origen=x,y&punto1=x,y&punto2=x,y&punto3=x,y&destino=x,y
+    input: 
+	    varialble requerida: origen, destino, cant_pasajer y cant_equipaje
+	    variable opcional: punto1, punto2, punto3
+	output:
+		total_tiempo, total_distancia, retorno_caba_tiempo, 
+		retorno_caba_distancia, total_tarifa, retorno_caba_tarifa
+	'''
+	
+	if (request.POST):
+		#incluir el header crsf en la llamada ajax
+		origen = request.POST.getlist('origen')
+		parada1 = request.POST.getlist('parada1')
+		parada2 = request.POST.getlist('parada2')
+		parada3 = request.POST.getlist('parada3')
+		destino = request.POST.getlist('destino')
+		gml = request.POST.getlist('gml')
+	else:
+		origen = request.GET.getlist('origen')
+		parada1 = request.GET.getlist('parada1')
+		parada2 = request.GET.getlist('parada2')
+		parada3 = request.GET.getlist('parada3')
+		destino = request.GET.getlist('destino')
+		gml = request.GET.get('gml')
+	# verifica que request tenga origen y destino
+	response = verifcarRequest(origen, destino, parada1, parada2, parada3)
+	datos = response['datos']
+	requestOk = response['requestOk']
+
+	
+	if(requestOk):
+	    #gml = True
+	    isRuteoOK = False
+	    print('gmll crudo')
+	    print(gml)
+	    res = armarRespuestaPuntos(datos,gml)
+	    # Calcular el costo del viaje
+	    try:
+	    	total_tarifa = getCostoViaje(res['total_distancia'])
+	    	isRuteoOK = True
+	    except Exception as e:
+	    	mensaje_error += '\nNo se recibió el costo de retorno a CABA'
+	    	print(mensaje_error+str(e))
+	    	isRuteoOK = False
+
+	    # Calcular el costo del retorno a CABA
+	    try:
+	    	retorno_caba_tarifa = getCostoViaje(res['retorno_caba_distancia'])
+	    except Exception as e:
+	    	mensaje_error += '\nNo se recibió el costo de retorno a CABA'
+	    	print(mensaje_error+str(e))
+	    	isRuteoOK = False
+
+	    if(isRuteoOK):
+	    	res["total_tarifa"] = total_tarifa
+	    	res["retorno_caba_tarifa"] = retorno_caba_tarifa
+	    	return JsonResponse(res)
+	    else:
+	    	resultado_json["mensaje"] = mensaje_error
+	    	resultado_json["error"] = True
+	    	return JsonResponse(resultado_json)
+	else:
+		resultado_json["mensaje"] = mensaje_error
+		resultado_json["error"] = True
+		return JsonResponse(resultado_json)
 
 def prepararMensajeRuteo(loc):
     """
