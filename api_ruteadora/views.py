@@ -237,7 +237,7 @@ def armarRespuestaPuntos(datos,gml):
         resultado_json["retorno_caba_tarifa"] = 0
         resultado_json["mensaje"] = mensaje_error
 
-def consultarPuntos(request):
+def consultarCalculoRuta(request):
 	'''
 	Recibe la peticion de ruteo y valida que el formato sea correcto
 	Si el request es correcto envía los datos para su calculo

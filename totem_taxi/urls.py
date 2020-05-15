@@ -23,7 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     #path('santiago', views.santi, name='san'),
     #path('images', views.taxi),
-    path('calculo_ruta', views.consultarPuntos), #api de consulta GET o POST, recibe una lista de mas de 4 parametros y los agrupa de a pares
+    path('calculo_ruta', views.consultarCalculoRuta), #api de consulta GET o POST, recibe una lista de mas de 4 parametros y los agrupa de a pares
     #path('puntos',views.ingresarPuntos),
     path('puntosMapa',views.ingresarPuntosMapa), #render de la pagina de ingreso de puntos con leaflet, llama a consultar_puntos con la lista de parametros
     #path('puntosmapa_sw',views.puntosmapa_sw), # render de la pagina para consulta con parametros predefinidos en swagger
