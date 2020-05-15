@@ -264,8 +264,28 @@ def consultarCalculoRuta(request):
 		parada3 = request.GET.getlist('parada3')
 		destino = request.GET.getlist('destino')
 		gml = request.GET.get('gml')
-	
 	# verifica que request tenga origen y destino
+	response = verifcarRequest(origen, destino, parada1, parada2, parada3)
+	datos = response['datos']
+	requestOk = response['requestOk']
+	mensaje_error = response['mensaje_error']
+	
+	if(requestOk):
+	    #gml = True
+		print('gmll crudo')
+		print(gml)
+		res = armarRespuestaPuntos(datos,gml)
+		return res
+	else:
+	 	resultado_json["mensaje"] = mensaje_error
+	 	resultado_json["error"] = True
+	 	return resultado_json
+
+def verifcarRequest(origen, destino, parada1, parada2, parada3):
+	datos = []
+	mensaje_error = ''
+	requestOk = False
+	response = {}
 	if(len(origen) and len(destino)):
 		origenLatLon = origen[0].split(',')
 		destinoLatLon = destino[0].split(',')
@@ -276,7 +296,6 @@ def consultarCalculoRuta(request):
 			datos.append(destinoLatLon[0])
 			datos.append(destinoLatLon[1])
 			requestOk = True
-			print(datos)
 
 			# verificando valores de paradas intermedias para validar cada punto
 			paradas = [ parada3, parada2, parada1, ]
@@ -293,18 +312,11 @@ def consultarCalculoRuta(request):
 			print(mensaje_error)
 	else:
 		mensaje_error = 'No se recibio datos de origen y/o destino.'
-
-	if(requestOk):
-	    #gml = True
-		print(datos)
-		print('gmll crudo')
-		print(gml)
-		res = armarRespuestaPuntos(datos,gml)
-		return res
-	else:
-	 	resultado_json["mensaje"] = mensaje_error
-	 	resultado_json["error"] = True
-	 	return resultado_json
+		print(mensaje_error)
+	response['mensaje_error'] = mensaje_error
+	response['datos'] = datos
+	response['requestOk'] = requestOk
+	return response
 
 def prepararMensajeRuteo(loc):
     """
