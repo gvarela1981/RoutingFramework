@@ -252,16 +252,16 @@ def consultarPuntos(request):
 	if (request.POST):
 		#incluir el header crsf en la llamada ajax
 		origen = request.POST.getlist('origen')
-		punto1 = request.POST.getlist('punto1')
-		punto2 = request.POST.getlist('punto2')
-		punto3 = request.POST.getlist('punto3')
+		parada1 = request.POST.getlist('parada1')
+		parada2 = request.POST.getlist('parada2')
+		parada3 = request.POST.getlist('parada3')
 		destino = request.POST.getlist('destino')
 		gml = request.POST.getlist('gml')
 	else:
 		origen = request.GET.getlist('origen')
-		punto1 = request.GET.getlist('punto1')
-		punto2 = request.GET.getlist('punto2')
-		punto3 = request.GET.getlist('punto3')
+		parada1 = request.GET.getlist('parada1')
+		parada2 = request.GET.getlist('parada2')
+		parada3 = request.GET.getlist('parada3')
 		destino = request.GET.getlist('destino')
 		gml = request.GET.get('gml')
 	
@@ -279,9 +279,9 @@ def consultarPuntos(request):
 			print(datos)
 
 			# verificando valores de paradas intermedias para validar cada punto
-			paradas = [ punto3, punto2, punto1, ]
+			paradas = [ parada3, parada2, parada1, ]
 			for coord in paradas:
-				# si hay un string en punto1 o punto2 o punto3 se analiza
+				# si hay un string en parada1 o parada2 o parada3 se analiza
 				if(len(coord) == 1):
 					coordLatLon = coord[0].split(',')
 					# si se tienen 2 coordenadas en el punto se agregan al listado de validacion de punto
@@ -296,6 +296,7 @@ def consultarPuntos(request):
 
 	if(requestOk):
 	    #gml = True
+		print(datos)
 		print('gmll crudo')
 		print(gml)
 		res = armarRespuestaPuntos(datos,gml)
