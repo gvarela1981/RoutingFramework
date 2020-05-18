@@ -343,12 +343,14 @@ def consultarCalculoRutaTarifa(request):
 	cant_equipaje = cant_equipaje[0] if len(cant_equipaje) > 0 else 0
 	cant_pasajero = cant_pasajero[0] if len(cant_pasajero) > 0 else 0
 
+	resultado_json = {}
 	# verifica que request tenga origen y destino y que todas las coordenadas 
 	# tengan 2 valores separados por comas
 	response = verifcarRequestCoords(origen, destino, parada1, parada2, parada3)
 	datos = response['datos']
 	requestOk = response['requestOk']
 
+	print('requestOk =', requestOk)    
 	if(requestOk):
 	    #gml = True
 	    isRuteoOK = False
@@ -386,8 +388,10 @@ def consultarCalculoRutaTarifa(request):
 	    	resultado_json["error"] = True
 	    	return JsonResponse(resultado_json)
 	else:
-		resultado_json["mensaje"] = mensaje_error
-		resultado_json["error"] = True
+		mensaje_error = 'No se recibio el origen o el destino en el formato correcto'
+		resultado_json['mensaje'] = mensaje_error
+		print(resultado_json['mensaje'])
+		resultado_json['error'] = True
 		return JsonResponse(resultado_json)
 
 def prepararMensajeRuteo(loc):
