@@ -18,6 +18,7 @@ from django.conf import settings
 # para implementar la vista de idex
 from django.http import HttpResponse
 from api_ruteadora.models import Endpoint, Costo, Ruteo, Comuna
+import math
 
 import json as simplejson
 import datetime
@@ -313,7 +314,7 @@ def consultarCalculoRutaTarifa(request):
 	Formato:
 	origen=x,y&punto1=x,y&punto2=x,y&punto3=x,y&destino=x,y
     input: 
-	    varialble requerida: origen, destino, cant_pasajer y cant_equipaje
+	    varialble requerida: origen, destino, cant_pasajero y cant_equipaje
 	    variable opcional: punto1, punto2, punto3
 	output:
 		total_tiempo, total_distancia, retorno_caba_tiempo, 
@@ -551,20 +552,23 @@ def getCostoViajeTaxi(costoParam) :
     total_distancia = costoParam['distancia']
     isRetorno = costoParam.get(isRetorno) if "isRetrno" in costoParam else False
     cant_equipaje = int(costoParam['cant_equipaje']) if "cant_equipaje" in costoParam else 0
-    print(costoParam)
     costo = 0
     tarifa_diurna_en_centavos = valor_ficha_diurna * 100
     tarifa_nocturna_en_centavos = valor_ficha_nocturna * 100
 
-    costo_diurno_sin_bajada_bandera = ((tarifa_diurna_en_centavos * total_distancia) / tarifa_diurna_en_centavos + distancia_por_ficha) / 100
-    costo_nocturno_sin_bajada_bandera = ((tarifa_nocturna_en_centavos * total_distancia) / tarifa_nocturna_en_centavos + distancia_por_ficha) / 100
-    print('verificando que no sea retorno para sumar bandera')
+    # cada distancia_por_ficha se cobra una nueva ficha
+    # si total_distancia es igual a distancia_por ficha cant_fichas es 1
+    # si total_distancia es el doble de distancia_por_ficha cant_fichas es 2
+    # si cant_fichas no es entero se redondea para arriba
+    # La primer ficha no se cobra, solo se cobra bajada de bandera
+    cant_fichas = math.ceil(total_distancia / distancia_por_ficha)
+    costo_diurno_sin_bajada_bandera = ((tarifa_diurna_en_centavos * cant_fichas) - tarifa_diurna_en_centavos) / 100 # se descuenta el valor de una ficha, la primera no se cobra
+    costo_nocturno_sin_bajada_bandera = ((tarifa_nocturna_en_centavos * cant_fichas ) - tarifa_diurna_en_centavos) / 100  # se descuenta el valor de una ficha, la primera no se cobra
     if(isRetorno == True):
-        costo_diurno = costo_nocturno_sin_bajada_bandera
-        costo_nocturno = costo_nocturno_sin_bajada_bandera
+        # en el retorno no hay bajada de bandera, se cobra la primer ficha
+        costo_diurno = (tarifa_diurna_en_centavos * cant_fichas) / 100 
+        costo_nocturno = (tarifa_nocturna_en_centavos * cant_fichas) / 100
     else:
-        print('bajada diurna = ', bajada_bandera_diurna)
-        print('bajada nocturna = ', bajada_bandera_nocturna)
         costo_diurno = costo_diurno_sin_bajada_bandera + bajada_bandera_diurna
         costo_nocturno = costo_nocturno_sin_bajada_bandera + bajada_bandera_nocturna
         if(cant_equipaje > 1):	
