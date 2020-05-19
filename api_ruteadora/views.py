@@ -195,10 +195,6 @@ def armarRespuestaPuntos(datos,gml):
     resultado_json = {}
     if(isRuteoOK):
         
-        resultado_json["total_time"] = total_time
-        resultado_json["total_distance"] = total_distance
-        resultado_json["return_caba_time"] = retorno_caba_time
-        resultado_json["return_caba_distance"] = retorno_caba_distance
         resultado_json["total_tiempo"] = total_time
         resultado_json["total_distancia"] = total_distance
         resultado_json["retorno_caba_tiempo"] = retorno_caba_time
