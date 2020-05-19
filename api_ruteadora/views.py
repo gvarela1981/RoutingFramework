@@ -61,11 +61,12 @@ except Exception as e:
 # index
 
 def index(request):
-    return HttpResponse("Hello, world. You're at the polls index.")
+	return HttpResponse("Hello, world. You're at the polls index.")
 
 #render swagger de mapa de puntos taxi
 def puntosmapa_sw(request):
-    return render(request, 'ingresopuntos/puntosmapassw.html', {})
+	return render(request, 'ingresopuntos/puntosmapassw.html', {})
+
 #Puntos de la busqueda
 def ingresarPuntosMapa(request):
     """Funcion que randeriza el frontend para ingreso de puntos en leaflet y envio ajax hacia
@@ -207,22 +208,17 @@ def armarRespuestaPuntos(datos,gml):
 		return resul
 		#return JsonResponse(resul)
 	else:
+		# Ruteo no esta OK
 		# Asegurar una respuesta y fin de consulta limpia
 		# Si no se puede calcular el retorno no enviar costos
-		resultado_json["total_time"] = 0
-		resultado_json["total_distance"] = 0
-		resultado_json["return_caba_time"] = 0
-		resultado_json["return_caba_distance"] = 0
 		resultado_json["total_tiempo"] = 0
 		resultado_json["total_distancia"] = 0
 		resultado_json["retorno_caba_tiempo"] = 0
 		resultado_json["retorno_caba_distancia"] = 0
-		resultado_json["total_tarifa"] = 0
-		resultado_json["retorno_caba_tarifa"] = 0
 		resultado_json["mensaje"] = mensaje_error
 
 		return resultado_json
-
+	# se devolvió el calculo de ruteo
 def consultarCalculoRuta(request):
 	'''
 	Recibe la peticion de ruteo y valida que el formato sea correcto
@@ -355,17 +351,11 @@ def consultarCalculoRutaTarifa(request):
 		print('gmll crudo')
 		print(gml)
 		res = armarRespuestaPuntos(datos,gml)
-		print('ruteo recibido')
-		print(res)
 		# Calcular el costo del viaje
 		try:
-			print('total distancia es ', res)
 			costoParam = dict(distancia = res['total_distancia'], cant_equipaje = cant_equipaje, isRetorno = False)
-			print(costoParam)
 			total_tarifa = getCostoViajeTaxi(costoParam)
-			print('costo hasta destino recibido')
 			isRuteoOK = True
-			print('ruteo ok ', isRuteoOK)
 		except Exception as e:
 			mensaje_error += '\nNo se recibió el costo de retorno a CABA'
 			print(mensaje_error+str(e))
@@ -380,17 +370,13 @@ def consultarCalculoRutaTarifa(request):
 				mensaje_error += '\nNo se recibió el costo de retorno a CABA'
 				print(mensaje_error+str(e))
 				isRuteoOK = False
-			print('costo retorno a caba recibido')
 		else:
 			retorno_caba_tarifa = 0
 
-		print('ruteok es', isRuteoOK)
 		if(isRuteoOK):
 			resultado_json = res
-			print(resultado_json)
 			resultado_json["total_tarifa"] = total_tarifa
 			resultado_json["retorno_caba_tarifa"] = retorno_caba_tarifa
-			print('enviando respuesta')
 		else:
 			resultado_json["mensaje"] = mensaje_error
 			resultado_json["error"] = True
@@ -565,8 +551,6 @@ def getCostoViajeTaxi(costoParam) :
 
     input: dict(distancia: num [isRetorno: True|Fals , cant_equipaje: num])
     '''
-    print('calculand costo')
-    print(costoParam)
     total_distancia = costoParam['distancia']
     isRetorno = costoParam.get(isRetorno) if "isRetrno" in costoParam else False
     cant_equipaje = int(costoParam['cant_equipaje']) if "cant_equipaje" in costoParam else 0
