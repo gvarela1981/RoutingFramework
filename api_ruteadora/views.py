@@ -124,101 +124,103 @@ def armarRespuestaPuntos(datos,gml):
 	headers = {
 		'Content-Type': 'application/json'
 	}
-	isRuteoOK = True
-
 	# valido los puntos ingresados
 	loc = validarPuntos(puntos, headers)
 	destino = loc[-1]
 
-	try:
-		response = getRuteo(loc, headers)
+	mensaje_error = ''
+	isRuteoOK = True
+	isRetornoOK = True
+
+	# El while permite cortar la ejecucion con break cuando un calculo
+	# importante no se pudo realizar
+	while isRuteoOK:
+		try:
+			response = getRuteo(loc, headers)
+		except Exception as e:
+			isRuteoOK = False
+			raise
+			break
 		resultado = response.json()
-	except Exception as e:
-		print('Ruteo no recibido'+str(e))
-		isRuteoOK = False
-	try:
 		total_time = resultado['route_summary']['total_time']
 		total_distance = resultado['route_summary']['total_distance']
-	except Exception as e:
-		print ('consulta rechazada en el server de ruteo: '+str(e))
-		isRuteoOK = False
-
-	# Verificar si esta dentro o fuera de CABA el ultimo punto
-	# si el ultimo punto esta fuera de caba se calcula el retorno
-	try:
-		destinoInCABA = destinoIsInCaba(destino, headers)
-		print("destinoInCABA es", destinoInCABA)
-	except Exception as e:
-		print('Respuesta no recibida de destino en CABA'+str(e))
-
-	if (destinoInCABA is False):
-		# Consultar punto de retorno a CABA
+		# Verificar si esta dentro o fuera de CABA el destino
+		# si el ultimo punto esta fuera de caba se calcula el retorno
 		try:
-			response = getRetornoCABA(destino, headers)
-			resultado_du = response 
+			destinoInCABA = destinoIsInCaba(destino, headers)
+			print("destinoInCABA es", destinoInCABA)
 		except Exception as e:
-			print('No se recibio respuesta de Retorno a CABA\n')
-			print('\n', e)
-		# Formateando el punto de retornoCABA para el ruteo
-		try:
-			retornoCABA = (resultado_du['latitud'], resultado_du['longitud'])
-		except Exception as e:
-			print('La respuesta de Retorno a CABA no continene latitudo y/o longitud'+str(e))
-			isRuteoOK = False
+			print('Error al buscar si destino es en CABA', e)
+			raise
+			break
+		if (destinoInCABA is False):
+			# Consultar punto de retorno a CABA
+			try:
+				response = getRetornoCABA(destino, headers)
+				resultado_du = response 
+			except Exception as e:
+				print('No se recibio respuesta de Retorno a CABA\n')
+				print('\n', e)
 
-		ruteoRetornoCABA = [destino]
-		ruteoRetornoCABA.append([retornoCABA[0], retornoCABA[1], str(retornoCABA[0] + "," + retornoCABA[1])])
+			# Formateando el punto de retornoCABA para el ruteo
+			try:
+				retornoCABA = (resultado_du['latitud'], resultado_du['longitud'])
+			except Exception as e:
+				mensaje_error = 'La respuesta de Retorno a CABA no continene latitud y/o longitud:'
+				print(mensaje_error, e)
+				isRetornoOK = False
+			# Si las coordenadas de retorno se recibieron bien, solicito ruteo hasta el retorno a CABA
+			if(isRetornoOK):
+				ruteoRetornoCABA = [destino]
+				ruteoRetornoCABA.append([retornoCABA[0], retornoCABA[1], str(retornoCABA[0] + "," + retornoCABA[1])])
+				print(ruteoRetornoCABA)
+				try:
+					response = getRuteo(ruteoRetornoCABA, headers)
+				except Exception as e:
+					isRuteoOK = False
+					raise
+					break
+				resultado = response.json()
+				retorno_caba_distance = resultado['route_summary']['total_distance']
+				retorno_caba_time = resultado['route_summary']['total_time']
+			else:
+				resultado_json = getResultadoEnCero()
+				resultado_json["mensaje"] = mensaje_error
+				return resultado_json
+			# La coordenada de retorno está bien construida
+		#el punto final esta dentro de caba
+		else:
+			retorno_caba_time = 0
+			retorno_caba_distance = 0
 
-		print('debaguear')
-
-		try:
-			response = getRuteo(ruteoRetornoCABA, headers)
-			resultado = response.json()
-		except Exception as e:
-			print('No se recibió respuesta de Ruteo'+str(e))
-			isRuteoOK = False
-		
-		print('resultado gml')
-		
-		try:
-			retorno_caba_distance = resultado['route_summary']['total_distance']
-			retorno_caba_time = resultado['route_summary']['total_time']
-		except Exception as e:
-			mensaje_error += '\nLa respuesta de Ruteo no continene la distancia o el tiempo total'
-			print(mensaje_error+str(e))
-			isRuteoOK = False
-	
-	#el punto final esta dentro de caba
-	else:
-		retorno_caba_time = 0
-		retorno_caba_distance = 0
-	
+		resultado_json = {}
+		if(isRuteoOK):
+			resultado_json["total_tiempo"] = total_time
+			resultado_json["total_distancia"] = total_distance
+			resultado_json["retorno_caba_tiempo"] = retorno_caba_time
+			resultado_json["retorno_caba_distancia"] = retorno_caba_distance
+			if gml=='1':
+				print('resultado gml')
+				resultado_json["gml"] = resultado
+			return resultado_json
+			#return JsonResponse(resultado_json)
+		else:
+			resultado_json = getResultadoEnCero()
+			resultado_json["mensaje"] = mensaje_error
+			return resultado_json
+		# se devolvió el calculo de ruteo con valores o en cero
+	# Fin de mecanismo while para cortar la ejecucion frente a errores
+def getResultadoEnCero():
 	resultado_json = {}
-	if(isRuteoOK):
-
-		resultado_json["total_tiempo"] = total_time
-		resultado_json["total_distancia"] = total_distance
-		resultado_json["retorno_caba_tiempo"] = retorno_caba_time
-		resultado_json["retorno_caba_distancia"] = retorno_caba_distance
-		if gml=='1':
-			resultado_json["gml"] = resultado
-
-		resul = resultado_json
-
-		return resul
-		#return JsonResponse(resul)
-	else:
-		# Ruteo no esta OK
-		# Asegurar una respuesta y fin de consulta limpia
-		# Si no se puede calcular el retorno no enviar costos
-		resultado_json["total_tiempo"] = 0
-		resultado_json["total_distancia"] = 0
-		resultado_json["retorno_caba_tiempo"] = 0
-		resultado_json["retorno_caba_distancia"] = 0
-		resultado_json["mensaje"] = mensaje_error
-
-		return resultado_json
-	# se devolvió el calculo de ruteo
+	# Ruteo no esta OK
+	# Asegurar una respuesta y fin de consulta limpia
+	# Si no se puede calcular el retorno no enviar costos
+	resultado_json["total_tiempo"] = 0
+	resultado_json["total_distancia"] = 0
+	resultado_json["retorno_caba_tiempo"] = 0
+	resultado_json["retorno_caba_distancia"] = 0
+	resultado_json["mensaje"] = ''
+	return resultado_json
 def consultarCalculoRuta(request):
 	'''
 	Recibe la peticion de ruteo y valida que el formato sea correcto
@@ -228,6 +230,7 @@ def consultarCalculoRuta(request):
 	varialble requerida: origen, destino
 	variable opcional: punto1, punto2, punto3
 	'''
+	resultado_json = {}
 	requestOk = False
 	datos = []
 
@@ -250,18 +253,37 @@ def consultarCalculoRuta(request):
 	# verifica que request tenga origen y destino y que todas las coordenadas 
 	# tengan 2 valores separados por comas
 	response = verifcarRequestCoords(origen, destino, parada1, parada2, parada3)
+
 	datos = response['datos']
-	
 	if(response['requestOk']):
 	    #gml = True
 		print('gmll crudo')
 		print(gml)
-		res = armarRespuestaPuntos(datos,gml)
-		return JsonResponse(res)
+		# Consultar ruteo y distancia
+		try:
+			resultado_json = armarRespuestaPuntos(datos,gml)
+		except KeyError as e:
+			print(type(e))
+			mensaje_error = 'No se obutvo total_time y/o total_distance del servidor de ruteo, repita la consulta en otro momento'
+			resultado_json = getResultadoEnCero()
+			resultado_json['mensaje'] = mensaje_error
+		except AttributeError as e:
+			print(type(e))
+			resultado_json = getResultadoEnCero()
+			resultado_json['mensaje'] = 'Respuesta no recibida de destino en CABA'
+			print(mensaje_error, e)
+		except Exception as e:
+			mensaje_error = 'No se obutvo respuesta del servidor de ruteo, repita la consulta en otro momento'
+			print(type(e))
+			print(resultado_json)
+			print(mensaje_error, datos)
+			resultado_json = getResultadoEnCero()
+			resultado_json['mensaje'] = mensaje_error
+		return JsonResponse(resultado_json)
 	else:
-	 	resultado_json["mensaje"] = mensaje_error
-	 	resultado_json["error"] = True
-	 	return JsonResponse(resultado_json)
+		resultado_json["mensaje"] = response['mensaje_error']
+		resultado_json["error"] = True
+		return JsonResponse(resultado_json)
 
 def verifcarRequestCoords(origen, destino, parada1, parada2, parada3):
 	datos = []
@@ -294,7 +316,7 @@ def verifcarRequestCoords(origen, destino, parada1, parada2, parada3):
 			mensaje_error = 'El valor de origen y/o destino no es correcto. Por favor verifique los valores.'
 			print(mensaje_error)
 	else:
-		mensaje_error = 'No se recibio datos de origen y/o destino.'
+		mensaje_error = 'No pudimos determinar el origen y/o destino. Por favor verifique el formato de la petición'
 		print(mensaje_error)
 	response['mensaje_error'] = mensaje_error
 	response['datos'] = datos
@@ -405,15 +427,34 @@ def getRuteo(loc, headers):
 	"""
 	Ejecuta la consulta a la ruta a la API de ruteo
 	"""
+	validandoRespuesta = True
 	mensaje = prepararMensajeRuteo(loc)
 	# Realizamos la consulta
 	url = server + mensaje
-	try:
-		response = requests.request('GET', url, headers=headers, allow_redirects=False)
-	except Exception as e:
-		print('Error en tiempo de ejecucion\n', e)
-		raise
-	return response
+	print(url)
+	while validandoRespuesta:
+		try:
+			response = requests.request('GET', url, headers=headers, allow_redirects=False)
+			validandoRespuesta = False
+		except Exception as e:
+			print ('No se recibió respuesta de API Ruteo externa: ', e)
+			print('respuesta ruteo fail: ', response)
+			validandoRespuesta = False
+			raise
+			break
+		try:
+			resultado = response.json()
+			total_time = resultado['route_summary']['total_time']
+			total_distance = resultado['route_summary']['total_distance']
+			validandoRespuesta = False
+		except KeyError as e:
+			print('No se recibio el valor total_time y/o total_distance de la API de ruteo externa: ', e)
+			print(type(e))
+			validandoRespuesta = False
+			raise
+			break
+		#respuesta validada
+		return response
 
 def destinoIsInCaba(destino, headers):
 	"""
@@ -421,11 +462,21 @@ def destinoIsInCaba(destino, headers):
 	o si se debe calcular los costos de retorno a CABA
 	"""
 	x, y, srid = destino[1], destino[0], 97433
-	comuna = Comuna.busquedaGeografica(x, y, srid, 0)
-	if(comuna == ' '):
-		destinoInCABA = False
-	else:
-		destinoInCABA = True
+	try:
+		comuna = Comuna.busquedaGeografica(x, y, srid, 0)
+		# Si comuna.upper() da error la busqueda geofrafica tuvo fallas, se captura excepcion
+		test = comuna.upper()
+	except Exception as e:
+		print('No se recibio respuesta sobre la informacion de la comuna')
+		raise
+	try:
+		if(comuna == ' '):
+			destinoInCABA = False
+		else:
+			destinoInCABA = True
+	except Exception as e:
+		print(type(e))
+		print('La respuesta sobre pudo incluir el campo la comuna')
 	return destinoInCABA
 
 def getRetornoCABA(destino, qheaders):
