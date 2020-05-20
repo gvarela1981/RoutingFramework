@@ -256,7 +256,7 @@ def consultarCalculoRuta(request):
 
 	datos = response['datos']
 	if(response['requestOk']):
-	    #gml = True
+	  #gml = True
 		print('gmll crudo')
 		print(gml)
 		# Consultar ruteo y distancia
@@ -369,37 +369,84 @@ def consultarCalculoRutaTarifa(request):
  
 	if(requestOk):
 		#gml = True
-		isRuteoOK = False
+		isCostoOK = True
 		print('gmll crudo')
 		print(gml)
-		res = armarRespuestaPuntos(datos,gml)
-		# Calcular el costo del viaje
-		try:
-			costoParam = dict(distancia = res['total_distancia'], cant_equipaje = cant_equipaje, isRetorno = False)
-			total_tarifa = getCostoViajeTaxi(costoParam)
-			isRuteoOK = True
-		except Exception as e:
-			mensaje_error += '\nNo se recibió el costo de retorno a CABA'
-			print(mensaje_error+str(e))
-			isRuteoOK = False
-
-		# Calcular el costo del retorno a CABA
-		if(res['retorno_caba_distancia'] > 0):
+		validarRespuestas = True
+		# Se utiliza el while como mecanismo para cortar la ejecucion
+		# frente a una respuesta con error
+		while validarRespuestas:
 			try:
-				costoParam = dict(distancia = res['retorno_caba_distancia'], isRetorno = True)
-				retorno_caba_tarifa = getCostoViajeTaxi(costoParam)
+				resultado_json = armarRespuestaPuntos(datos,gml)
+				validarRespuestas = False
+			except KeyError as e:
+				print(type(e))
+				mensaje_error = 'No se obutvo total_time y/o total_distance del servidor de ruteo, repita la consulta en otro momento'
+				resultado_json = getResultadoEnCero()
+				resultado_json['mensaje'] = mensaje_error
+				validarRespuestas = False
+				break
+			except AttributeError as e:
+				print(type(e))
+				resultado_json = getResultadoEnCero()
+				resultado_json['mensaje'] = 'Respuesta no recibida de destino en CABA'
+				print(mensaje_error, e)
+				validarRespuestas = False
+				break
+			except Exception as e:
+				mensaje_error = 'No se obutvo respuesta del servidor de ruteo, repita la consulta en otro momento'
+				print(type(e))
+				print(resultado_json)
+				print(mensaje_error, datos)
+				resultado_json = getResultadoEnCero()
+				resultado_json['mensaje'] = mensaje_error
+				validarRespuestas = False
+				break
+
+			# Calcular el costo del viaje
+			print('ya calcule distancia')
+			print(resultado_json)
+			try:
+				print('calculando costo hasta destino')
+				costoParam = dict(distancia = resultado_json['total_distancia'], cant_equipaje = cant_equipaje, isRetorno = False)
+				print(costoParam)
+				total_tarifa = getCostoViajeTaxi(costoParam)
+				isCostoOK = True
+				validarRespuestas = False
 			except Exception as e:
 				mensaje_error += '\nNo se recibió el costo de retorno a CABA'
 				print(mensaje_error+str(e))
-				isRuteoOK = False
-		else:
-			retorno_caba_tarifa = 0
+				isCostoOK = False
+				validarRespuestas = False
+				break
 
-		if(isRuteoOK):
-			resultado_json = res
+			print('verificando si se calcula el costo de retorno')
+			print(resultado_json['retorno_caba_distancia'])
+			# Calcular el costo del retorno a CABA
+			if(resultado_json['retorno_caba_distancia'] > 0):
+				print('calculando costo retorno')
+				try:
+					costoParam = dict(distancia = resultado_json['retorno_caba_distancia'], isRetorno = True)
+					retorno_caba_tarifa = getCostoViajeTaxi(costoParam)
+					validarRespuestas = False
+				except Exception as e:
+					mensaje_error += '\nNo se recibió el costo de retorno a CABA'
+					print(mensaje_error+str(e))
+					isCostoOK = False
+					validarRespuestas = False
+					break
+			else:
+				print('seteando costo retorno en cero')
+				retorno_caba_tarifa = 0
+				validarRespuestas = False
+
+		# fin de validarRespuestas
+		print(isCostoOK)
+		if(isCostoOK):
 			resultado_json["total_tarifa"] = total_tarifa
 			resultado_json["retorno_caba_tarifa"] = retorno_caba_tarifa
 		else:
+			resultado_json = getResultadoEnCero()
 			resultado_json["mensaje"] = mensaje_error
 			resultado_json["error"] = True
 		return JsonResponse(resultado_json)
@@ -426,6 +473,7 @@ def prepararMensajeRuteo(loc):
 def getRuteo(loc, headers):
 	"""
 	Ejecuta la consulta a la ruta a la API de ruteo
+	y controla que la respuesta tenga los datos requeridos
 	"""
 	validandoRespuesta = True
 	mensaje = prepararMensajeRuteo(loc)
@@ -594,46 +642,48 @@ def getBandaHoraria():
     else:
         return 'nocturna'
 def getCostoViajeTaxi(costoParam) :
-    '''
-    Se calcula el costo diurno y nocturno
-    debido a que el horario del calculo y del inicio del viaje
-    puede diferir, por ahora se devuelve el costo de acuerdo al horario
-    de la consulta para dedicir que hacer en la proxima etapa
+  '''
+  Se calcula el costo diurno y nocturno
+  debido a que el horario del calculo y del inicio del viaje
+  puede diferir, por ahora se devuelve el costo de acuerdo al horario
+  de la consulta para dedicir que hacer en la proxima etapa
 
-    input: dict(distancia: num [isRetorno: True|Fals , cant_equipaje: num])
-    '''
-    total_distancia = costoParam['distancia']
-    isRetorno = costoParam.get(isRetorno) if "isRetrno" in costoParam else False
-    cant_equipaje = int(costoParam['cant_equipaje']) if "cant_equipaje" in costoParam else 0
-    costo = 0
-    tarifa_diurna_en_centavos = valor_ficha_diurna * 100
-    tarifa_nocturna_en_centavos = valor_ficha_nocturna * 100
+  input: dict(distancia: num [isRetorno: True|Fals , cant_equipaje: num])
+  '''
+  total_distancia = costoParam['distancia']
+  isRetorno = costoParam.get(isRetorno) if "isRetrno" in costoParam else False
+  cant_equipaje = int(costoParam['cant_equipaje']) if "cant_equipaje" in costoParam else 0
+  costo = 0
+  tarifa_diurna_en_centavos = valor_ficha_diurna * 100
+  tarifa_nocturna_en_centavos = valor_ficha_nocturna * 100
 
-    # cada distancia_por_ficha se cobra una nueva ficha
-    # si total_distancia es igual a distancia_por ficha cant_fichas es 1
-    # si total_distancia es el doble de distancia_por_ficha cant_fichas es 2
-    # si cant_fichas no es entero se redondea para arriba
-    # La primer ficha no se cobra, solo se cobra bajada de bandera
-    cant_fichas = math.ceil(total_distancia / distancia_por_ficha)
-    costo_diurno_sin_bajada_bandera = ((tarifa_diurna_en_centavos * cant_fichas) - tarifa_diurna_en_centavos) / 100 # se descuenta el valor de una ficha, la primera no se cobra
-    costo_nocturno_sin_bajada_bandera = ((tarifa_nocturna_en_centavos * cant_fichas ) - tarifa_diurna_en_centavos) / 100  # se descuenta el valor de una ficha, la primera no se cobra
-    if(isRetorno == True):
-        # en el retorno no hay bajada de bandera, se cobra la primer ficha
-        costo_diurno = (tarifa_diurna_en_centavos * cant_fichas) / 100 
-        costo_nocturno = (tarifa_nocturna_en_centavos * cant_fichas) / 100
-    else:
-        costo_diurno = costo_diurno_sin_bajada_bandera + bajada_bandera_diurna
-        costo_nocturno = costo_nocturno_sin_bajada_bandera + bajada_bandera_nocturna
-        if(cant_equipaje > 1):	
-        	# si solo tiene un equipaje no se le aplica el costo
-        	# Por cada equipaje adicional se suma el valor de 5 fichas
-        	equipaje_a_cobrar = cant_equipaje - 1
-        	costo_diurno = costo_diurno + valor_ficha_diurna * 5 * equipaje_a_cobrar
-        	costo_nocturno = costo_nocturno + valor_ficha_nocturna * 5 * equipaje_a_cobrar
-    costo_diurno += costo_diurno * porcentaje_diurno_ajuste / 100
-    costo_nocturno += costo_nocturno * porcentaje_nocturno_ajuste / 100
-    if(getBandaHoraria() == 'diurna'):
-        costo = costo_diurno
-    else:
-        costo = costo_nocturno
-    return costo
+  # cada distancia_por_ficha se cobra una nueva ficha
+  # si total_distancia es igual a distancia_por ficha cant_fichas es 1
+  # si total_distancia es el doble de distancia_por_ficha cant_fichas es 2
+  # si cant_fichas no es entero se redondea para arriba
+  # La primer ficha no se cobra, solo se cobra bajada de bandera
+  cant_fichas = math.ceil(total_distancia / distancia_por_ficha)
+  costo_diurno_sin_bajada_bandera = ((tarifa_diurna_en_centavos * cant_fichas) - tarifa_diurna_en_centavos) / 100 # se descuenta el valor de una ficha, la primera no se cobra
+  costo_nocturno_sin_bajada_bandera = ((tarifa_nocturna_en_centavos * cant_fichas ) - tarifa_diurna_en_centavos) / 100  # se descuenta el valor de una ficha, la primera no se cobra
+  if(isRetorno == True):
+    # en el retorno no hay bajada de bandera y se cobra la primer ficha
+    costo_diurno = (tarifa_diurna_en_centavos * cant_fichas) / 100 
+    costo_nocturno = (tarifa_nocturna_en_centavos * cant_fichas) / 100
+  else:
+    costo_diurno = costo_diurno_sin_bajada_bandera + bajada_bandera_diurna
+    costo_nocturno = costo_nocturno_sin_bajada_bandera + bajada_bandera_nocturna
+    if(cant_equipaje > 1):	
+    	# si solo tiene un equipaje no se le aplica el costo
+    	# Por cada equipaje adicional se suma el valor de 5 fichas
+    	equipaje_a_cobrar = cant_equipaje - 1
+    	costo_diurno = costo_diurno + valor_ficha_diurna * 5 * equipaje_a_cobrar
+    	costo_nocturno = costo_nocturno + valor_ficha_nocturna * 5 * equipaje_a_cobrar
+    # Se calculo el costo hasta destino y se suma el equipaje
+  # Se calculo tanto el viaje hasta destino como hasta retorno a CABA
+  costo_diurno += costo_diurno * porcentaje_diurno_ajuste / 100
+  costo_nocturno += costo_nocturno * porcentaje_nocturno_ajuste / 100
+  if(getBandaHoraria() == 'diurna'):
+  	costo = costo_diurno
+  else:
+  	costo = costo_nocturno
+  return costo
