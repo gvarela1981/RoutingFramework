@@ -58,8 +58,10 @@ def validarPuntos(puntos, headers):
   locValidado = []
   for i in puntos:
     url = server_no_autopista + i[1] + ',' + i[0] + '?exclude=motorway'
-
-    response = requests.request('GET', url, headers=headers, allow_redirects=False)
+    try:
+    	response = requests.request('GET', url, headers=headers, allow_redirects=False)
+    except Exception as e:
+    	print('No se recibio respuesta de la API que filtra autopistas')
 
     resultado_du = response.json()
     # print('resultado json:  ' + str(resultado_du))
@@ -256,7 +258,7 @@ def consultarCalculoRuta(request):
 			resultado_json['mensaje'] = 'Respuesta no recibida de destino en CABA'
 			print(resultado_json)
 		except Exception as e:
-			mensaje_error = 'No se obutvo respuesta del servidor de ruteo, repita la consulta en otro momento'
+			mensaje_error = 'No se obutvo respuesta de una API externa, repita la consulta en otro momento'
 			print(type(e))
 			print(resultado_json)
 			resultado_json = getResultadoEnCero()
@@ -378,7 +380,7 @@ def consultarCalculoRutaTarifa(request):
 				resultado_json = getResultadoEnCero()
 				resultado_json['mensaje'] = mensaje_error
 			except Exception as e:
-				mensaje_error = 'No se obutvo respuesta del servidor de ruteo, repita la consulta en otro momento'
+				mensaje_error = 'No se obutvo respuesta de una API externa, repita la consulta en otro momento'
 				print(type(e))
 				print(mensaje_error)
 				resultado_json = getResultadoEnCero()
