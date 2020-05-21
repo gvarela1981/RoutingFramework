@@ -145,9 +145,9 @@ class Ruteo(models.Model):
 				for ele in result:
 					# Obtengo la columna latitud y longitud de la tabla Ruteos
 					response.update({'latitud': ele.latitud, 'longitud': ele.longitud})
-	    	# Si no pertenece a caba se devuelve un espacio en blanco
+	    	# Si no hay interseccion se devuelve un diccionario en blanco
 			else:
-				response.update({'latitud': 0, 'longitud': 0})
+				response = {}
 			return response
 		except Exception as e:
 			print(e)
@@ -259,7 +259,8 @@ class Comuna(models.Model):
 			if len(result) > 0:
 				for e in result:
 					response.append(e.barrios)
-	  	# Si no pertenece a caba se devuelve un espacio en blanco
+	  	# Si no pertenece a caba, o no se encuentra una 
+	  	# interseccion se devuelve un espacio en blanco
 			else:
 				response.append(' ')
 			return response[0]

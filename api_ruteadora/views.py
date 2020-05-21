@@ -154,16 +154,22 @@ def armarRespuestaPuntos(datos,gml):
 			raise
 			break
 		if (destinoInCABA is False):
+			
 			# Consultar punto de retorno a CABA
 			try:
 				response = getRetornoCABA(destino, headers)
-				resultado_du = response 
+				list(response)
 			except Exception as e:
-				print('No se recibio respuesta de Retorno a CABA\n')
-				print('\n', e)
+				mensaje_error = 'No se recibio respuesta de Retorno a CABA\n'
+				print(type(e))
+				print(mensaje_error, e)
+				isRetornoOK = False
+				raise
+				break
 
 			# Formateando el punto de retornoCABA para el ruteo
 			try:
+				resultado_du = response
 				retornoCABA = (resultado_du['latitud'], resultado_du['longitud'])
 			except Exception as e:
 				mensaje_error = 'La respuesta de Retorno a CABA no continene latitud y/o longitud:'
@@ -173,11 +179,11 @@ def armarRespuestaPuntos(datos,gml):
 			if(isRetornoOK):
 				ruteoRetornoCABA = [destino]
 				ruteoRetornoCABA.append([retornoCABA[0], retornoCABA[1], str(retornoCABA[0] + "," + retornoCABA[1])])
-				print(ruteoRetornoCABA)
 				try:
 					response = getRuteo(ruteoRetornoCABA, headers)
 				except Exception as e:
 					isRuteoOK = False
+					mensaje_error = 'La respuesta del ruteo hasta Retorno a CABA no respondio: '
 					raise
 					break
 				resultado = response.json()
@@ -188,12 +194,13 @@ def armarRespuestaPuntos(datos,gml):
 				resultado_json["mensaje"] = mensaje_error
 				return resultado_json
 			# La coordenada de retorno está bien construida
-		#el punto final esta dentro de caba
+		#el destino estuvo dentro de caba
 		else:
 			retorno_caba_time = 0
 			retorno_caba_distance = 0
 
 		resultado_json = {}
+		
 		if(isRuteoOK):
 			resultado_json["total_tiempo"] = total_time
 			resultado_json["total_distancia"] = total_distance
@@ -207,9 +214,10 @@ def armarRespuestaPuntos(datos,gml):
 		else:
 			resultado_json = getResultadoEnCero()
 			resultado_json["mensaje"] = mensaje_error
-			return resultado_json
-		# se devolvió el calculo de ruteo con valores o en cero
+		# se preparo el calculo de ruteo con valores o en cero
 	# Fin de mecanismo while para cortar la ejecucion frente a errores
+
+	return resultado_json
 def getResultadoEnCero():
 	resultado_json = {}
 	# Ruteo no esta OK
@@ -262,6 +270,11 @@ def consultarCalculoRuta(request):
 		# Consultar ruteo y distancia
 		try:
 			resultado_json = armarRespuestaPuntos(datos,gml)
+		except TypeError as e:
+			print(type(e))
+			mensaje_error = 'No se recibio respuesta de Retorno a CABA, repita la consulta en otro momento'
+			resultado_json = getResultadoEnCero()
+			resultado_json['mensaje'] = mensaje_error
 		except KeyError as e:
 			print(type(e))
 			mensaje_error = 'No se obutvo total_time y/o total_distance del servidor de ruteo, repita la consulta en otro momento'
@@ -271,7 +284,7 @@ def consultarCalculoRuta(request):
 			print(type(e))
 			resultado_json = getResultadoEnCero()
 			resultado_json['mensaje'] = 'Respuesta no recibida de destino en CABA'
-			print(mensaje_error, e)
+			print(resultado_json)
 		except Exception as e:
 			mensaje_error = 'No se obutvo respuesta del servidor de ruteo, repita la consulta en otro momento'
 			print(type(e))
@@ -369,7 +382,7 @@ def consultarCalculoRutaTarifa(request):
  
 	if(requestOk):
 		#gml = True
-		isCostoOK = True
+		isCostoOK = False
 		print('gmll crudo')
 		print(gml)
 		validarRespuestas = True
@@ -384,41 +397,53 @@ def consultarCalculoRutaTarifa(request):
 				mensaje_error = 'No se obutvo total_time y/o total_distance del servidor de ruteo, repita la consulta en otro momento'
 				resultado_json = getResultadoEnCero()
 				resultado_json['mensaje'] = mensaje_error
+				print(resultado_json)
 				validarRespuestas = False
 				break
 			except AttributeError as e:
 				print(type(e))
 				resultado_json = getResultadoEnCero()
 				resultado_json['mensaje'] = 'Respuesta no recibida de destino en CABA'
-				print(mensaje_error, e)
+				print(resultado_json)
 				validarRespuestas = False
 				break
+			except TypeError as e:
+				print(type(e))
+				mensaje_error = 'No se recibio respuesta de Retorno a CABA, repita la consulta en otro momento'
+				resultado_json = getResultadoEnCero()
+				resultado_json['mensaje'] = mensaje_error
 			except Exception as e:
 				mensaje_error = 'No se obutvo respuesta del servidor de ruteo, repita la consulta en otro momento'
 				print(type(e))
-				print(resultado_json)
 				print(mensaje_error, datos)
 				resultado_json = getResultadoEnCero()
 				resultado_json['mensaje'] = mensaje_error
+				print(resultado_json)
 				validarRespuestas = False
 				break
 
 			# Calcular el costo del viaje
 			print('ya calcule distancia')
 			print(resultado_json)
-			try:
-				print('calculando costo hasta destino')
-				costoParam = dict(distancia = resultado_json['total_distancia'], cant_equipaje = cant_equipaje, isRetorno = False)
-				print(costoParam)
-				total_tarifa = getCostoViajeTaxi(costoParam)
-				isCostoOK = True
-				validarRespuestas = False
-			except Exception as e:
-				mensaje_error += '\nNo se recibió el costo de retorno a CABA'
-				print(mensaje_error+str(e))
+			if(resultado_json['total_distancia'] > 0):
+				try:
+					print('calculando costo hasta destino')
+					costoParam = dict(distancia = resultado_json['total_distancia'], cant_equipaje = cant_equipaje, isRetorno = False)
+					print(costoParam)
+					total_tarifa = getCostoViajeTaxi(costoParam)
+					isCostoOK = True
+					validarRespuestas = False
+				except Exception as e:
+					mensaje_error += '\nNo se recibió el costo hasta destino'
+					print(mensaje_error+str(e))
+					isCostoOK = False
+					validarRespuestas = False
+					break
+				# se agregó el costo del recorrido a la respuesta
+			else:
+				total_tarifa = 0
 				isCostoOK = False
-				validarRespuestas = False
-				break
+			# se resolvio si se calcula el costo o no
 
 			print('verificando si se calcula el costo de retorno')
 			print(resultado_json['retorno_caba_distancia'])
@@ -431,7 +456,12 @@ def consultarCalculoRutaTarifa(request):
 					validarRespuestas = False
 				except Exception as e:
 					mensaje_error += '\nNo se recibió el costo de retorno a CABA'
-					print(mensaje_error+str(e))
+					print(mensaje_error, e)
+					resultado_json = getResultadoEnCero()
+					resultado_json['total_tarifa'] = 0
+					resultado_json['retorno_caba_tarifa'] = 0
+					print(resultado_json['mensaje'])
+					resultado_json['error'] = True
 					isCostoOK = False
 					validarRespuestas = False
 					break
@@ -446,12 +476,16 @@ def consultarCalculoRutaTarifa(request):
 			resultado_json["total_tarifa"] = total_tarifa
 			resultado_json["retorno_caba_tarifa"] = retorno_caba_tarifa
 		else:
-			resultado_json = getResultadoEnCero()
-			resultado_json["mensaje"] = mensaje_error
-			resultado_json["error"] = True
+			# Si isCostoOK = False resultado_json ya tiene mensaje preparado
+			# seteo en cero tarifa_total y retorno_caba_tarifa
+			resultado_json["total_tarifa"] = 0
+			resultado_json["retorno_caba_tarifa"] = 0
 		return JsonResponse(resultado_json)
 	else:
+		resultado_json = getResultadoEnCero()
 		mensaje_error = 'No se recibio el origen o el destino en el formato correcto'
+		resultado_json['total_tarifa'] = 0
+		resultado_json['retorno_caba_tarifa'] = 0
 		resultado_json['mensaje'] = mensaje_error
 		print(resultado_json['mensaje'])
 		resultado_json['error'] = True
@@ -512,7 +546,9 @@ def destinoIsInCaba(destino, headers):
 	x, y, srid = destino[1], destino[0], 97433
 	try:
 		comuna = Comuna.busquedaGeografica(x, y, srid, 0)
-		# Si comuna.upper() da error la busqueda geofrafica tuvo fallas, se captura excepcion
+		# Si comuna no es string, entonces comuna.upper() da error 
+		# y la busqueda geografica tuvo fallas, se captura excepcion
+		# Si no se encontro una interseccion el metodo devuelve un string vacio
 		test = comuna.upper()
 	except Exception as e:
 		print('No se recibio respuesta sobre la informacion de la comuna')
@@ -535,7 +571,6 @@ def getRetornoCABA(destino, qheaders):
 	# Composición del punto
 	x, y, srid = destino[1], destino[0], 97433
 	retorno = Ruteo.busquedaGeografica(x, y, srid, 0)
-
 	return retorno
 
 def buscarInformacionRuteo(request):
