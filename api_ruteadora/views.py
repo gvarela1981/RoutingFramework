@@ -58,32 +58,6 @@ except Exception as e:
     print(mensaje_error+str(e))
     isRuteoOK = False
 
-# index
-
-def index(request):
-	return HttpResponse("Hello, world. You're at the polls index.")
-
-#render swagger de mapa de puntos taxi
-def puntosmapa_sw(request):
-	return render(request, 'ingresopuntos/puntosmapassw.html', {})
-
-#Puntos de la busqueda
-def ingresarPuntosMapa(request):
-    """Funcion que randeriza el frontend para ingreso de puntos en leaflet y envio ajax hacia
-    la url calculo_ruta->consultarPuntos. Es llamada desde el ruteador con la url puntosMapas.
-
-    Args:
-        ``request`` :  Sin uso.
-
-
-    Returns:
-        render html.
-        """
-    return render(request, 'ingresopuntos/index2.html', {})
-def ingresarPuntos(request):
-    #return JsonResponse({'santi': 'ssssss'})
-    return render(request, 'ingresopuntos/ingresopuntos.html', {})
-
 def validarPuntos(puntos, headers):
   locValidado = []
   for i in puntos:
@@ -573,103 +547,6 @@ def getRetornoCABA(destino, qheaders):
 	retorno = Ruteo.busquedaGeografica(x, y, srid, 0)
 	return retorno
 
-def buscarInformacionRuteo(request):
-    try:
-
-        callback = str(request.get('callback', ''))
-        x = request.get('x', 0)
-        y = request.get('y', 0)
-        srid = request.get('srid', 4326)
-        radio = request.get('radio', 0)
-        orden = request.get('orden', 'distancia')
-        limite = request.get('limite', 10)
-        fullInfo = request.get('fullInfo', 'False')
-        formato = request.get('formato', 'json')
-        
-        response = {"totalFull": 0, "instancias": [], 'total': 0}
-        
-        try:
-
-            x = float(x)
-            y = float(y)
-
-            if not x != 0 or not y != 0:
-                x = 0
-                y = 0
-
-        except Exception:
-            x = 0
-            y = 0
-
-        try:
-            srid = int(srid)
-
-        except Exception:
-            srid = 4326
-
-        try:
-            radio = float(radio)
-
-            if radio > 0:
-                if radio > 50:
-                    radio = 1
-            else:
-                radio = 1
-
-        except Exception:
-            radio = 1
-
-        try:
-            limite = int(limite)
-
-            if limite < 0:
-                limite = 10
-
-        except Exception:
-            limite = 10
-        
-        punto = GEOSGeometry('SRID={2};POINT({0} {1})'.format(x, y, srid))
-
-        if srid != settings.SRID:
-            punto.transform(settings.SRID)
-
-        objetos_ruteo = Ruteo.busquedaGeografica(x, y, srid, radio)
-
-        obj = objetos_ruteo[0]
-
-        latitud = obj.latitud
-        longitud = obj.longitud
-        
-
-        instancia = {                
-                "latitud" : latitud,
-                "longitud" : longitud
-        }
-
-        response['instancias'].append(instancia)
-        response['totalFull'] += 1
-        response['total'] += 1
-
-        if formato == 'geojson':
-
-            if response['instancias']:
-                res = response['instancias']
-            # Implementar excepcion respuesta vacia
-            else:
-                res = armarEstructuraGeoLayer([], [], '', 'geojson')
-
-            res = simplejson.dumps(res)
-            #res = aplicar_callback(res, callback)
-            return HttpResponse(res, mimetype="application/json")
-
-        response_str = simplejson.dumps(response)
-        #response = aplicar_callback(response, callback)
-        #return HttpResponse(response, mimetype="application/json")
-        return response['instancias']
-    except Exception as e:
-        response = simplejson.dumps({'error': e.__str__()})
-        response = aplicar_callback(response, callback)
-        return HttpResponse(response, mimetype="application/json")
 def getBandaHoraria():
     Hora = datetime.datetime.now().time()
     if(Hora > inicio_servicio_diurno and Hora < inicio_servicio_nocturno):

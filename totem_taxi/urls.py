@@ -19,13 +19,9 @@ from django.urls import include, path
 from api_ruteadora import views
 
 urlpatterns = [
-    path('api_ruteadora/', include('api_ruteadora.urls')),
-    path('admin/', admin.site.urls),
-    #path('santiago', views.santi, name='san'),
-    #path('images', views.taxi),
-    path('calculo_ruta', views.consultarCalculoRuta), #api de consulta GET o POST, recibe variables origen y destino como string con coordenadas x,y en srid=4326, opcionalmente parada1, parada2 y parada3
-    path('calculo_ruta_tarifa', views.consultarCalculoRutaTarifa), #api de consulta GET o POST, recibe variables origen y destino como string con coordenadas x,y en srid=4326 junto con cant_equipaje y cant_pasajero, opcionalmente parada1, parada2 y parada3
-    #path('puntos',views.ingresarPuntos),
-    path('puntosMapa',views.ingresarPuntosMapa), #render de la pagina de ingreso de puntos con leaflet, llama a consultar_puntos con la lista de parametros
-    #path('puntosmapa_sw',views.puntosmapa_sw), # render de la pagina para consulta con parametros predefinidos en swagger
-    ]
+  path('api_ruteadora/', include('api_ruteadora.urls')),
+  path('admin/', admin.site.urls),
+  path('calculo_ruta', views.consultarCalculoRuta), #api de consulta GET o POST, recibe variables origen y destino como string con coordenadas x,y en srid=4326, opcionalmente parada1, parada2 y parada3
+  path('calculo_ruta_tarifa', views.consultarCalculoRutaTarifa), #api de consulta GET o POST, recibe variables origen y destino como string con coordenadas x,y en srid=4326 junto con cant_equipaje y cant_pasajero, opcionalmente parada1, parada2 y parada3
+  #path('puntos',views.ingresarPuntos),
+  ]
