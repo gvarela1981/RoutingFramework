@@ -13,17 +13,13 @@
 from django.http import JsonResponse
 import requests
 from django.shortcuts import render
-#from modules.modules2.parametros import constantes
 from django.conf import settings
-# para implementar la vista de idex
 from django.http import HttpResponse
 from api_ruteadora.models import Endpoint, Costo, Ruteo, Comuna
 import math
 
 import json as simplejson
 import datetime
-# from commons.commons import aplicar_callback
-# from commons.commons import armarEstructuraGeoLayer
 from django.contrib.gis.geos import GEOSGeometry
 
 # mensaje a devolver en el json cuando se produce un error
@@ -263,7 +259,6 @@ def consultarCalculoRuta(request):
 			mensaje_error = 'No se obutvo respuesta del servidor de ruteo, repita la consulta en otro momento'
 			print(type(e))
 			print(resultado_json)
-			print(mensaje_error, datos)
 			resultado_json = getResultadoEnCero()
 			resultado_json['mensaje'] = mensaje_error
 		return JsonResponse(resultado_json)
@@ -301,10 +296,8 @@ def verifcarRequestCoords(origen, destino, parada1, parada2, parada3):
 						datos.insert(2, coordLatLon[0])
 		else:
 			mensaje_error = 'El valor de origen y/o destino no es correcto. Por favor verifique los valores.'
-			print(mensaje_error)
 	else:
 		mensaje_error = 'No pudimos determinar el origen y/o destino. Por favor verifique el formato de la petición'
-		print(mensaje_error)
 	response['mensaje_error'] = mensaje_error
 	response['datos'] = datos
 	response['requestOk'] = requestOk
@@ -371,14 +364,12 @@ def consultarCalculoRutaTarifa(request):
 				mensaje_error = 'No se obutvo total_time y/o total_distance del servidor de ruteo, repita la consulta en otro momento'
 				resultado_json = getResultadoEnCero()
 				resultado_json['mensaje'] = mensaje_error
-				print(resultado_json)
 				validarRespuestas = False
 				break
 			except AttributeError as e:
 				print(type(e))
 				resultado_json = getResultadoEnCero()
 				resultado_json['mensaje'] = 'Respuesta no recibida de destino en CABA'
-				print(resultado_json)
 				validarRespuestas = False
 				break
 			except TypeError as e:
@@ -389,21 +380,16 @@ def consultarCalculoRutaTarifa(request):
 			except Exception as e:
 				mensaje_error = 'No se obutvo respuesta del servidor de ruteo, repita la consulta en otro momento'
 				print(type(e))
-				print(mensaje_error, datos)
+				print(mensaje_error)
 				resultado_json = getResultadoEnCero()
 				resultado_json['mensaje'] = mensaje_error
-				print(resultado_json)
 				validarRespuestas = False
 				break
 
 			# Calcular el costo del viaje
-			print('ya calcule distancia')
-			print(resultado_json)
 			if(resultado_json['total_distancia'] > 0):
 				try:
-					print('calculando costo hasta destino')
 					costoParam = dict(distancia = resultado_json['total_distancia'], cant_equipaje = cant_equipaje, isRetorno = False)
-					print(costoParam)
 					total_tarifa = getCostoViajeTaxi(costoParam)
 					isCostoOK = True
 					validarRespuestas = False
@@ -419,11 +405,9 @@ def consultarCalculoRutaTarifa(request):
 				isCostoOK = False
 			# se resolvio si se calcula el costo o no
 
-			print('verificando si se calcula el costo de retorno')
 			print(resultado_json['retorno_caba_distancia'])
 			# Calcular el costo del retorno a CABA
 			if(resultado_json['retorno_caba_distancia'] > 0):
-				print('calculando costo retorno')
 				try:
 					costoParam = dict(distancia = resultado_json['retorno_caba_distancia'], isRetorno = True)
 					retorno_caba_tarifa = getCostoViajeTaxi(costoParam)
@@ -434,13 +418,11 @@ def consultarCalculoRutaTarifa(request):
 					resultado_json = getResultadoEnCero()
 					resultado_json['total_tarifa'] = 0
 					resultado_json['retorno_caba_tarifa'] = 0
-					print(resultado_json['mensaje'])
 					resultado_json['error'] = True
 					isCostoOK = False
 					validarRespuestas = False
 					break
 			else:
-				print('seteando costo retorno en cero')
 				retorno_caba_tarifa = 0
 				validarRespuestas = False
 
@@ -461,7 +443,6 @@ def consultarCalculoRutaTarifa(request):
 		resultado_json['total_tarifa'] = 0
 		resultado_json['retorno_caba_tarifa'] = 0
 		resultado_json['mensaje'] = mensaje_error
-		print(resultado_json['mensaje'])
 		resultado_json['error'] = True
 		return JsonResponse(resultado_json)
 
@@ -494,7 +475,6 @@ def getRuteo(loc, headers):
 			validandoRespuesta = False
 		except Exception as e:
 			print ('No se recibió respuesta de API Ruteo externa: ', e)
-			print('respuesta ruteo fail: ', response)
 			validandoRespuesta = False
 			raise
 			break
