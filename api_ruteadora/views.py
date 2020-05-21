@@ -85,21 +85,21 @@ def ingresarPuntos(request):
     return render(request, 'ingresopuntos/ingresopuntos.html', {})
 
 def validarPuntos(puntos, headers):
-    locValidado = []
-    for i in puntos:
-        url = server_no_autopista + i[1] + ',' + i[0] + '?exclude=motorway'
+  locValidado = []
+  for i in puntos:
+    url = server_no_autopista + i[1] + ',' + i[0] + '?exclude=motorway'
 
-        response = requests.request('GET', url, headers=headers, allow_redirects=False)
+    response = requests.request('GET', url, headers=headers, allow_redirects=False)
 
-        resultado_du = response.json()
-        # print('resultado json:  ' + str(resultado_du))
-        punto_chequeado = resultado_du['waypoints'][0]['location']
-        # un array con 3 strs, dos de lat lon y una ultima con lat,lon, todos habienso sido chequeados
-        punto = [str(punto_chequeado[1]), str(punto_chequeado[0]),
-                 str(punto_chequeado[1]) + ',' + str(punto_chequeado[0])]
+    resultado_du = response.json()
+    # print('resultado json:  ' + str(resultado_du))
+    punto_chequeado = resultado_du['waypoints'][0]['location']
+    # un array con 3 strs, dos de lat lon y una ultima con lat,lon, todos habienso sido chequeados
+    punto = [str(punto_chequeado[1]), str(punto_chequeado[0]),
+             str(punto_chequeado[1]) + ',' + str(punto_chequeado[0])]
 
-        locValidado.append(punto)
-    return locValidado
+    locValidado.append(punto)
+  return locValidado
 
 def armarRespuestaPuntos(datos,gml):
 	"""Funcion que es llamada internamente y que arma diversas consultas a APIs externas
