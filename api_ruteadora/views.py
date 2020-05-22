@@ -252,7 +252,7 @@ def consultarCalculoRuta(request):
 			resultado_json['mensaje'] = mensaje_error
 		except KeyError as e:
 			print(type(e))
-			mensaje_error = 'No se obutvo total_time y/o total_distance del servidor de ruteo, repita la consulta en otro momento'
+			mensaje_error = 'No se obutvo duration y/o distance del servidor de ruteo, repita la consulta en otro momento'
 			resultado_json = getResultadoEnCero()
 			resultado_json['mensaje'] = mensaje_error
 		except AttributeError as e:
@@ -422,7 +422,7 @@ def consultarCalculoRutaTarifa(request):
 			except KeyError as e:
 				print(type(e))
 				print("e ...", e)
-				mensaje_error = 'No se obutvo total_time y/o total_distance del servidor de ruteo, repita la consulta en otro momento'
+				mensaje_error = 'No se obutvo duration y/o distance del servidor de ruteo, repita la consulta en otro momento'
 				resultado_json = getResultadoEnCero()
 				resultado_json['mensaje'] = mensaje_error
 				validarRespuestas = False
@@ -570,7 +570,7 @@ def getRuteo(loc, headers):
 			total_distance = resultado['routes'][0]['distance']
 			validandoRespuesta = False
 		except KeyError as e:
-			print('No se recibio el valor total_time y/o total_distance de la API de ruteo externa: ', e)
+			print('No se recibio el valor duration y/o distance de la API de ruteo externa: ', e)
 			print(type(e), e)
 			validandoRespuesta = False
 			raise
@@ -603,7 +603,7 @@ def getRuteo_old(loc, headers):
 			total_distance = resultado['route_summary']['total_distance']
 			validandoRespuesta = False
 		except KeyError as e:
-			print('No se recibio el valor total_time y/o total_distance de la API de ruteo externa: ', e)
+			print('No se recibio el valor duration y/o distance de la API de ruteo externa: ', e)
 			print(type(e))
 			validandoRespuesta = False
 			raise
