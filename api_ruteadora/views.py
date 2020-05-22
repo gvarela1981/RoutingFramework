@@ -20,7 +20,7 @@ import math
 
 import json as simplejson
 import datetime
-from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.geos import GEOSGeometry, Point
 
 # mensaje a devolver en el json cuando se produce un error
 mensaje_error = ''
@@ -268,8 +268,63 @@ def consultarCalculoRuta(request):
 		resultado_json["mensaje"] = response['mensaje_error']
 		resultado_json["error"] = True
 		return JsonResponse(resultado_json)
-
 def verifcarRequestCoords(origen, destino, parada1, parada2, parada3):
+	datos = []
+	mensaje_error = ''
+	requestOk = False
+	response = {}
+
+	if(len(origen) and len(destino)):
+		origenLatLon = origen[0].split(',')
+		destinoLatLon = destino[0].split(',')
+		# verifica que origen y destino tenga exactamente 2 coordenadas separadas por coma
+		while(len(origenLatLon) == 2 and len(destinoLatLon) == 2):
+			try:
+				punto =  Point(float(origenLatLon[1]), float(origenLatLon[0]), srid = 4326)
+				datos.append(origenLatLon[0])
+				datos.append(origenLatLon[1])
+				origenLatLon.pop() # origenLatLon ya no tiene 2 elementos y termina el while
+			except Exception as e:
+				mensaje_error = 'El valor de origen no es correcto. Por favor verifique los valores.'
+				print(mensaje_error, e)
+				break
+				raise Exception(mensaje_error)
+			try:
+				destinoLatLon[0].replace(" ", "")
+				destinoLatLon[1].replace(" ", "")
+				punto =  Point(float(destinoLatLon[1]), float(destinoLatLon[0]), srid = 4326)
+				datos.append(destinoLatLon[0])
+				datos.append(destinoLatLon[1])
+				destinoLatLon.pop() # destinoLatLon ya no tiene 2 elementos y termina el while
+			except Exception as e:
+				mensaje_error = 'El valor de destino no es correcto. Por favor verifique los valores.'
+				print(mensaje_error, e)
+				break
+				raise Exception(mensaje_error)
+			requestOk = True
+				
+			# verificando valores de paradas intermedias para validar cada punto
+			paradas = [ parada3, parada2, parada1, ]
+			for coord in paradas:
+				# si hay un string en parada1 o parada2 o parada3 se analiza
+				if(len(coord) == 1):
+					coordLatLon = coord[0].split(',')
+					# si se tienen 2 coordenadas en el punto se agregan al listado de validacion de punto
+					if(len(coordLatLon) == 2):
+						datos.insert(2, coordLatLon[1])
+						datos.insert(2, coordLatLon[0])
+					# se agregó una coordenada al listado de coordenas
+				# se termino de parsear una coordenada
+			# se termino de analizar las 3 coordenadas
+		# fin de while que se usa para cortar la ejecucion frente a un error
+	else:
+		mensaje_error = 'No pudimos determinar el origen y/o destino. Por favor verifique el formato de la petición'
+	response['mensaje_error'] = mensaje_error
+	response['datos'] = datos
+	response['requestOk'] = requestOk
+	return response
+
+def verifcarRequestCoords_old(origen, destino, parada1, parada2, parada3):
 	datos = []
 	mensaje_error = ''
 	requestOk = False
