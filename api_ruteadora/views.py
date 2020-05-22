@@ -75,7 +75,6 @@ def validarPuntos(puntos, headers):
 
 		locValidado.append(punto)
 	return locValidado
-
 def armarRespuestaPuntos(datos,gml):
 	"""Funcion que es llamada internamente y que arma diversas consultas a APIs externas
 	para realizar el calculo de una traza definida por los puntos contenidos en datos.
@@ -326,43 +325,6 @@ def verifcarRequestCoords(origen, destino, parada1, parada2, parada3):
 	response['datos'] = datos
 	response['requestOk'] = requestOk
 	return response
-
-def verifcarRequestCoords_old(origen, destino, parada1, parada2, parada3):
-	datos = []
-	mensaje_error = ''
-	requestOk = False
-	response = {}
-
-	if(len(origen) and len(destino)):
-		origenLatLon = origen[0].split(',')
-		destinoLatLon = destino[0].split(',')
-		# verifica que origen y destino tenga exactamente 2 coordenadas separadas por coma
-		if(len(origenLatLon) == 2 and len(destinoLatLon) == 2):
-			datos.append(origenLatLon[0])
-			datos.append(origenLatLon[1])
-			datos.append(destinoLatLon[0])
-			datos.append(destinoLatLon[1])
-			requestOk = True
-
-			# verificando valores de paradas intermedias para validar cada punto
-			paradas = [ parada3, parada2, parada1, ]
-			for coord in paradas:
-				# si hay un string en parada1 o parada2 o parada3 se analiza
-				if(len(coord) == 1):
-					coordLatLon = coord[0].split(',')
-					# si se tienen 2 coordenadas en el punto se agregan al listado de validacion de punto
-					if(len(coordLatLon) == 2):
-						datos.insert(2, coordLatLon[1])
-						datos.insert(2, coordLatLon[0])
-		else:
-			mensaje_error = 'El valor de origen y/o destino no es correcto. Por favor verifique los valores.'
-	else:
-		mensaje_error = 'No pudimos determinar el origen y/o destino. Por favor verifique el formato de la petición'
-	response['mensaje_error'] = mensaje_error
-	response['datos'] = datos
-	response['requestOk'] = requestOk
-	return response
-
 def consultarCalculoRutaTarifa(request):
 	'''
 	Recibe la peticion de ruteo y valida que el formato sea correcto
@@ -507,7 +469,6 @@ def consultarCalculoRutaTarifa(request):
 		resultado_json['mensaje'] = response['mensaje_error']
 		resultado_json['error'] = True
 		return JsonResponse(resultado_json)
-
 def prepararMensajeRuteo(loc):
 	"""
 	Prepara el string para la consulta del ruteo
@@ -524,19 +485,6 @@ def prepararMensajeRuteo(loc):
 			mensaje = mensaje + ';' # la última coordenada no lleva ;
 		j = j + 1
 	mensaje = mensaje + '?overview=full&geometries=geojson'
-	return mensaje
-def prepararMensajeRuteo_old(loc):
-	"""
-	Prepara el string para la consulta del ruteo
-	"""
-	mensaje ='?output=json'
-	j = 0
-	for i in loc:
-		if j < len(loc):
-			mensaje = mensaje + '&loc=' + loc[j][2]
-		j = j + 1
-		# linea original de armado
-		# mensaje = '?output=json&loc=' + loc[0][2] + '&loc=' + loc[1][2] + '&loc=' + loc[2][2] + '&loc=' + loc[3][2] +'&loc=' + loc[4][2] +  '&loc=' + loc[5][2]
 	return mensaje
 def getRuteo(loc, headers):
 	"""
@@ -578,40 +526,6 @@ def getRuteo(loc, headers):
 		#respuesta validada
 		return response
 	# fin de while para cortar la ejecucion frente a un error
-
-def getRuteo_old(loc, headers):
-	"""
-	Ejecuta la consulta a la ruta a la API de ruteo
-	y controla que la respuesta tenga los datos requeridos
-	"""
-	validandoRespuesta = True
-	mensaje = prepararMensajeRuteo(loc)
-	# Realizamos la consulta
-	url = server + mensaje
-	while validandoRespuesta:
-		try:
-			response = requests.request('GET', url, headers=headers, allow_redirects=False)
-			validandoRespuesta = False
-		except Exception as e:
-			print ('No se recibió respuesta de API Ruteo externa: ', e)
-			validandoRespuesta = False
-			raise
-			break
-		try:
-			resultado = response.json()
-			total_time = resultado['route_summary']['total_time']
-			total_distance = resultado['route_summary']['total_distance']
-			validandoRespuesta = False
-		except KeyError as e:
-			print('No se recibio el valor duration y/o distance de la API de ruteo externa: ', e)
-			print(type(e))
-			validandoRespuesta = False
-			raise
-			break
-		#respuesta validada
-		return response
-	# fin de while para cortar la ejecucion frente a un error
-
 def destinoIsInCaba(destino, headers):
 	"""
 	Consulta si el destino se encuentra dentro de CABA
@@ -636,7 +550,6 @@ def destinoIsInCaba(destino, headers):
 		print(type(e))
 		print('La respuesta sobre pudo incluir el campo la comuna')
 	return destinoInCABA
-
 def getRetornoCABA(destino, qheaders):
 	"""
 	Consultar el punto de retorno a CABA
@@ -646,7 +559,6 @@ def getRetornoCABA(destino, qheaders):
 	x, y, srid = destino[1], destino[0], 97433
 	retorno = Ruteo.busquedaGeografica(x, y, srid, 0)
 	return retorno
-
 def getBandaHoraria():
 	Hora = datetime.datetime.now().time()
 	if(Hora > inicio_servicio_diurno and Hora < inicio_servicio_nocturno):
