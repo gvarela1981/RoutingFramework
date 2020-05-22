@@ -1,8 +1,8 @@
 
 """
 .. module:: views
-   :platform: Unix, Windows
-   :synopsis: Un modulo utilizable.
+	 :platform: Unix, Windows
+	 :synopsis: Un modulo utilizable.
 
 .. moduleauthor:: Mi Nombre <scastellano10@gmail.com>
 
@@ -26,52 +26,52 @@ from django.contrib.gis.geos import GEOSGeometry, Point
 mensaje_error = ''
 #APIs que se consumen, despues de actualizarlas se debe reiniciar servicio
 try:
-    #Server de ruteo
-    objRuteo = Endpoint.objects.filter(nombre='Ruteo')
-    server = objRuteo.values_list('url', flat=True).first()
-    #Server autopista
-    objRuteo = Endpoint.objects.filter(nombre='Filtro de Autopista')
-    server_no_autopista = objRuteo.values_list('url', flat=True).first()
+	#Server de ruteo
+	objRuteo = Endpoint.objects.filter(nombre='Ruteo')
+	server = objRuteo.values_list('url', flat=True).first()
+	#Server autopista
+	objRuteo = Endpoint.objects.filter(nombre='Filtro de Autopista')
+	server_no_autopista = objRuteo.values_list('url', flat=True).first()
 except Exception as e:
-    mensaje_error += '\nSe produjo un error al obtener las direcciones de las API externas para realizar los calculos'
-    print(mensaje_error+str(e))
-    isRuteoOK = False
+	mensaje_error += '\nSe produjo un error al obtener las direcciones de las API externas para realizar los calculos'
+	print(mensaje_error+str(e))
+	isRuteoOK = False
 
 MAX_POINTS = settings.MAX_POINTS if hasattr(settings, 'MAX_POINTS') else 10
 try:
-    objSettings = Costo.objects.filter(nombre='Costo')
-    inicio_servicio_diurno = objSettings.values_list('inicio_servicio_diurno', flat=True).first()
-    inicio_servicio_nocturno = objSettings.values_list('inicio_servicio_nocturno', flat=True).first()
-    bajada_bandera_diurna = objSettings.values_list('bajada_bandera_diurna', flat=True).first()
-    bajada_bandera_nocturna = objSettings.values_list('bajada_bandera_nocturna', flat=True).first()
-    valor_ficha_diurna = objSettings.values_list('valor_ficha_diurna', flat=True).first()
-    valor_ficha_nocturna = objSettings.values_list('valor_ficha_nocturna', flat=True).first()
-    porcentaje_diurno_ajuste = objSettings.values_list('porcentaje_diurno_ajuste', flat=True).first()
-    porcentaje_nocturno_ajuste = objSettings.values_list('porcentaje_nocturno_ajuste', flat=True).first()
-    distancia_por_ficha = objSettings.values_list('distancia_por_ficha', flat=True).first()
+	objSettings = Costo.objects.filter(nombre='Costo')
+	inicio_servicio_diurno = objSettings.values_list('inicio_servicio_diurno', flat=True).first()
+	inicio_servicio_nocturno = objSettings.values_list('inicio_servicio_nocturno', flat=True).first()
+	bajada_bandera_diurna = objSettings.values_list('bajada_bandera_diurna', flat=True).first()
+	bajada_bandera_nocturna = objSettings.values_list('bajada_bandera_nocturna', flat=True).first()
+	valor_ficha_diurna = objSettings.values_list('valor_ficha_diurna', flat=True).first()
+	valor_ficha_nocturna = objSettings.values_list('valor_ficha_nocturna', flat=True).first()
+	porcentaje_diurno_ajuste = objSettings.values_list('porcentaje_diurno_ajuste', flat=True).first()
+	porcentaje_nocturno_ajuste = objSettings.values_list('porcentaje_nocturno_ajuste', flat=True).first()
+	distancia_por_ficha = objSettings.values_list('distancia_por_ficha', flat=True).first()
 except Exception as e:
-    mensaje_error += '\nSe produjo un error al obtener valor de los costos'
-    print(mensaje_error+str(e))
-    isRuteoOK = False
+	mensaje_error += '\nSe produjo un error al obtener valor de los costos'
+	print(mensaje_error+str(e))
+	isRuteoOK = False
 
 def validarPuntos(puntos, headers):
-  locValidado = []
-  for i in puntos:
-    url = server_no_autopista + i[1] + ',' + i[0] + '?exclude=motorway'
-    try:
-    	response = requests.request('GET', url, headers=headers, allow_redirects=False)
-    except Exception as e:
-    	print('No se recibio respuesta de la API que filtra autopistas')
+	locValidado = []
+	for i in puntos:
+		url = server_no_autopista + i[1] + ',' + i[0] + '?exclude=motorway'
+		try:
+			response = requests.request('GET', url, headers=headers, allow_redirects=False)
+		except Exception as e:
+			print('No se recibio respuesta de la API que filtra autopistas')
 
-    resultado_du = response.json()
-    # print('resultado json:  ' + str(resultado_du))
-    punto_chequeado = resultado_du['waypoints'][0]['location']
-    # un array con 3 strs, dos de lat lon y una ultima con lat,lon, todos habienso sido chequeados
-    punto = [str(punto_chequeado[1]), str(punto_chequeado[0]),
-             str(punto_chequeado[1]) + ',' + str(punto_chequeado[0])]
+		resultado_du = response.json()
+		# print('resultado json:  ' + str(resultado_du))
+		punto_chequeado = resultado_du['waypoints'][0]['location']
+		# un array con 3 strs, dos de lat lon y una ultima con lat,lon, todos habienso sido chequeados
+		punto = [str(punto_chequeado[1]), str(punto_chequeado[0]),
+						 str(punto_chequeado[1]) + ',' + str(punto_chequeado[0])]
 
-    locValidado.append(punto)
-  return locValidado
+		locValidado.append(punto)
+	return locValidado
 
 def armarRespuestaPuntos(datos,gml):
 	"""Funcion que es llamada internamente y que arma diversas consultas a APIs externas
@@ -114,8 +114,8 @@ def armarRespuestaPuntos(datos,gml):
 			raise
 			break
 		resultado = response.json()
-		total_time = resultado['route_summary']['total_time']
-		total_distance = resultado['route_summary']['total_distance']
+		total_time = resultado['routes'][0]['duration']
+		total_distance = resultado['routes'][0]['distance']
 		# Verificar si esta dentro o fuera de CABA el destino
 		# si el ultimo punto esta fuera de caba se calcula el retorno
 		try:
@@ -159,8 +159,8 @@ def armarRespuestaPuntos(datos,gml):
 					raise
 					break
 				resultado = response.json()
-				retorno_caba_distance = resultado['route_summary']['total_distance']
-				retorno_caba_time = resultado['route_summary']['total_time']
+				retorno_caba_distance = resultado['routes'][0]['distance']
+				retorno_caba_time = resultado['routes'][0]['duration']
 			else:
 				resultado_json = getResultadoEnCero()
 				resultado_json["mensaje"] = mensaje_error
@@ -236,7 +236,7 @@ def consultarCalculoRuta(request):
 
 	datos = response['datos']
 	if(response['requestOk']):
-	  #gml = True
+		#gml = True
 		print('gmll crudo')
 		print(gml)
 		# Consultar ruteo y distancia
@@ -367,8 +367,8 @@ def consultarCalculoRutaTarifa(request):
 	Formato:
 	origen=x,y&punto1=x,y&punto2=x,y&punto3=x,y&destino=x,y
 	input: 
-	    varialble requerida: origen, destino, cant_pasajero y cant_equipaje
-	    variable opcional: punto1, punto2, punto3
+			varialble requerida: origen, destino, cant_pasajero y cant_equipaje
+			variable opcional: punto1, punto2, punto3
 	output:
 		total_tiempo, total_distancia, retorno_caba_tiempo, 
 		retorno_caba_distancia, total_tarifa, retorno_caba_tarifa
@@ -418,6 +418,7 @@ def consultarCalculoRutaTarifa(request):
 				validarRespuestas = False
 			except KeyError as e:
 				print(type(e))
+				print("e ...", e)
 				mensaje_error = 'No se obutvo total_time y/o total_distance del servidor de ruteo, repita la consulta en otro momento'
 				resultado_json = getResultadoEnCero()
 				resultado_json['mensaje'] = mensaje_error
@@ -435,8 +436,9 @@ def consultarCalculoRutaTarifa(request):
 				resultado_json = getResultadoEnCero()
 				resultado_json['mensaje'] = mensaje_error
 			except Exception as e:
-				mensaje_error = 'No se obutvo respuesta de una API externa, repita la consulta en otro momento'
-				print(type(e))
+				#mensaje_error = 'No se obutvo respuesta de una API externa, repita la consulta en otro momento'
+				mensaje_error = str(e)
+				print(type(e), e)
 				print(mensaje_error)
 				resultado_json = getResultadoEnCero()
 				resultado_json['mensaje'] = mensaje_error
@@ -504,18 +506,35 @@ def consultarCalculoRutaTarifa(request):
 		return JsonResponse(resultado_json)
 
 def prepararMensajeRuteo(loc):
-  """
-  Prepara el string para la consulta del ruteo
-  """
-  mensaje ='?output=json'
-  j = 0
-  for i in loc:
-    if j < len(loc):
-      mensaje = mensaje + '&loc=' + loc[j][2]
-    j = j + 1
-    # linea original de armado
-    # mensaje = '?output=json&loc=' + loc[0][2] + '&loc=' + loc[1][2] + '&loc=' + loc[2][2] + '&loc=' + loc[3][2] +'&loc=' + loc[4][2] +  '&loc=' + loc[5][2]
-  return mensaje
+	"""
+	Prepara el string para la consulta del ruteo
+	"""
+	mensaje ='/'
+	print(type(loc))
+	j = 0
+	for i in loc:
+		if j < len(loc):
+			print(loc)
+			mensaje = mensaje + loc[j][1] + "," + loc[j][0]
+			print(mensaje)
+		if(len(loc) > j + 1):
+			mensaje = mensaje + ';' # la última coordenada no lleva ;
+		j = j + 1
+	mensaje = mensaje + '?overview=full&geometries=geojson'
+	return mensaje
+def prepararMensajeRuteo_old(loc):
+	"""
+	Prepara el string para la consulta del ruteo
+	"""
+	mensaje ='?output=json'
+	j = 0
+	for i in loc:
+		if j < len(loc):
+			mensaje = mensaje + '&loc=' + loc[j][2]
+		j = j + 1
+		# linea original de armado
+		# mensaje = '?output=json&loc=' + loc[0][2] + '&loc=' + loc[1][2] + '&loc=' + loc[2][2] + '&loc=' + loc[3][2] +'&loc=' + loc[4][2] +  '&loc=' + loc[5][2]
+	return mensaje
 def getRuteo(loc, headers):
 	"""
 	Ejecuta la consulta a la ruta a la API de ruteo
@@ -526,6 +545,46 @@ def getRuteo(loc, headers):
 	# Realizamos la consulta
 	url = server + mensaje
 	print(url)
+	while validandoRespuesta:
+		try:
+			response = requests.request('GET', url, headers=headers, allow_redirects=False)
+			validandoRespuesta = False
+		except Exception as e:
+			print ('No se recibió respuesta de API Ruteo externa: ', e)
+			validandoRespuesta = False
+			raise Exception("No se recibió respuesta del server de Ruteo")
+			break
+		try:
+			resultado = response.json()
+			if(resultado["code"] == "InvalidQuery"):
+				print(resultado["message"])
+				raise Exception(resultado["message"])
+				break
+			print('distancia ')
+			print(resultado['routes'][0]['duration'])
+			print(resultado['routes'][0]['distance'])
+			total_time = resultado['routes'][0]['duration']
+			total_distance = resultado['routes'][0]['distance']
+			validandoRespuesta = False
+		except KeyError as e:
+			print('No se recibio el valor total_time y/o total_distance de la API de ruteo externa: ', e)
+			print(type(e), e)
+			validandoRespuesta = False
+			raise
+			break
+		#respuesta validada
+		return response
+	# fin de while para cortar la ejecucion frente a un error
+
+def getRuteo_old(loc, headers):
+	"""
+	Ejecuta la consulta a la ruta a la API de ruteo
+	y controla que la respuesta tenga los datos requeridos
+	"""
+	validandoRespuesta = True
+	mensaje = prepararMensajeRuteo(loc)
+	# Realizamos la consulta
+	url = server + mensaje
 	while validandoRespuesta:
 		try:
 			response = requests.request('GET', url, headers=headers, allow_redirects=False)
@@ -548,6 +607,7 @@ def getRuteo(loc, headers):
 			break
 		#respuesta validada
 		return response
+	# fin de while para cortar la ejecucion frente a un error
 
 def destinoIsInCaba(destino, headers):
 	"""
@@ -585,54 +645,54 @@ def getRetornoCABA(destino, qheaders):
 	return retorno
 
 def getBandaHoraria():
-    Hora = datetime.datetime.now().time()
-    if(Hora > inicio_servicio_diurno and Hora < inicio_servicio_nocturno):
-        return 'diurna'
-    else:
-        return 'nocturna'
+	Hora = datetime.datetime.now().time()
+	if(Hora > inicio_servicio_diurno and Hora < inicio_servicio_nocturno):
+		return 'diurna'
+	else:
+		return 'nocturna'
 def getCostoViajeTaxi(costoParam) :
-  '''
-  Se calcula el costo diurno y nocturno
-  debido a que el horario del calculo y del inicio del viaje
-  puede diferir, por ahora se devuelve el costo de acuerdo al horario
-  de la consulta para dedicir que hacer en la proxima etapa
+	'''
+	Se calcula el costo diurno y nocturno
+	debido a que el horario del calculo y del inicio del viaje
+	puede diferir, por ahora se devuelve el costo de acuerdo al horario
+	de la consulta para dedicir que hacer en la proxima etapa
 
-  input: dict(distancia: num [isRetorno: True|Fals , cant_equipaje: num])
-  '''
-  total_distancia = costoParam['distancia']
-  isRetorno = costoParam.get(isRetorno) if "isRetrno" in costoParam else False
-  cant_equipaje = int(costoParam['cant_equipaje']) if "cant_equipaje" in costoParam else 0
-  costo = 0
-  tarifa_diurna_en_centavos = valor_ficha_diurna * 100
-  tarifa_nocturna_en_centavos = valor_ficha_nocturna * 100
+	input: dict(distancia: num [isRetorno: True|Fals , cant_equipaje: num])
+	'''
+	total_distancia = costoParam['distancia']
+	isRetorno = costoParam.get(isRetorno) if "isRetrno" in costoParam else False
+	cant_equipaje = int(costoParam['cant_equipaje']) if "cant_equipaje" in costoParam else 0
+	costo = 0
+	tarifa_diurna_en_centavos = valor_ficha_diurna * 100
+	tarifa_nocturna_en_centavos = valor_ficha_nocturna * 100
 
-  # cada distancia_por_ficha se cobra una nueva ficha
-  # si total_distancia es igual a distancia_por ficha cant_fichas es 1
-  # si total_distancia es el doble de distancia_por_ficha cant_fichas es 2
-  # si cant_fichas no es entero se redondea para arriba
-  # La primer ficha no se cobra, solo se cobra bajada de bandera
-  cant_fichas = math.ceil(total_distancia / distancia_por_ficha)
-  costo_diurno_sin_bajada_bandera = ((tarifa_diurna_en_centavos * cant_fichas) - tarifa_diurna_en_centavos) / 100 # se descuenta el valor de una ficha, la primera no se cobra
-  costo_nocturno_sin_bajada_bandera = ((tarifa_nocturna_en_centavos * cant_fichas ) - tarifa_diurna_en_centavos) / 100  # se descuenta el valor de una ficha, la primera no se cobra
-  if(isRetorno == True):
-    # en el retorno no hay bajada de bandera y se cobra la primer ficha
-    costo_diurno = (tarifa_diurna_en_centavos * cant_fichas) / 100 
-    costo_nocturno = (tarifa_nocturna_en_centavos * cant_fichas) / 100
-  else:
-    costo_diurno = costo_diurno_sin_bajada_bandera + bajada_bandera_diurna
-    costo_nocturno = costo_nocturno_sin_bajada_bandera + bajada_bandera_nocturna
-    if(cant_equipaje > 1):	
-    	# si solo tiene un equipaje no se le aplica el costo
-    	# Por cada equipaje adicional se suma el valor de 5 fichas
-    	equipaje_a_cobrar = cant_equipaje - 1
-    	costo_diurno = costo_diurno + valor_ficha_diurna * 5 * equipaje_a_cobrar
-    	costo_nocturno = costo_nocturno + valor_ficha_nocturna * 5 * equipaje_a_cobrar
-    # Se calculo el costo hasta destino y se suma el equipaje
-  # Se calculo tanto el viaje hasta destino como hasta retorno a CABA
-  costo_diurno += costo_diurno * porcentaje_diurno_ajuste / 100
-  costo_nocturno += costo_nocturno * porcentaje_nocturno_ajuste / 100
-  if(getBandaHoraria() == 'diurna'):
-  	costo = costo_diurno
-  else:
-  	costo = costo_nocturno
-  return costo
+	# cada distancia_por_ficha se cobra una nueva ficha
+	# si total_distancia es igual a distancia_por ficha cant_fichas es 1
+	# si total_distancia es el doble de distancia_por_ficha cant_fichas es 2
+	# si cant_fichas no es entero se redondea para arriba
+	# La primer ficha no se cobra, solo se cobra bajada de bandera
+	cant_fichas = math.ceil(total_distancia / distancia_por_ficha)
+	costo_diurno_sin_bajada_bandera = ((tarifa_diurna_en_centavos * cant_fichas) - tarifa_diurna_en_centavos) / 100 # se descuenta el valor de una ficha, la primera no se cobra
+	costo_nocturno_sin_bajada_bandera = ((tarifa_nocturna_en_centavos * cant_fichas ) - tarifa_diurna_en_centavos) / 100  # se descuenta el valor de una ficha, la primera no se cobra
+	if(isRetorno == True):
+		# en el retorno no hay bajada de bandera y se cobra la primer ficha
+		costo_diurno = (tarifa_diurna_en_centavos * cant_fichas) / 100 
+		costo_nocturno = (tarifa_nocturna_en_centavos * cant_fichas) / 100
+	else:
+		costo_diurno = costo_diurno_sin_bajada_bandera + bajada_bandera_diurna
+		costo_nocturno = costo_nocturno_sin_bajada_bandera + bajada_bandera_nocturna
+		if(cant_equipaje > 1):	
+			# si solo tiene un equipaje no se le aplica el costo
+			# Por cada equipaje adicional se suma el valor de 5 fichas
+			equipaje_a_cobrar = cant_equipaje - 1
+			costo_diurno = costo_diurno + valor_ficha_diurna * 5 * equipaje_a_cobrar
+			costo_nocturno = costo_nocturno + valor_ficha_nocturna * 5 * equipaje_a_cobrar
+		# Se calculo el costo hasta destino y se suma el equipaje
+	# Se calculo tanto el viaje hasta destino como hasta retorno a CABA
+	costo_diurno += costo_diurno * porcentaje_diurno_ajuste / 100
+	costo_nocturno += costo_nocturno * porcentaje_nocturno_ajuste / 100
+	if(getBandaHoraria() == 'diurna'):
+		costo = costo_diurno
+	else:
+		costo = costo_nocturno
+	return costo
