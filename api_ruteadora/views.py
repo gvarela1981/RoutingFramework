@@ -51,6 +51,7 @@ try:
 	distancia_por_ficha = objSettings.values_list('distancia_por_ficha', flat=True).first()
 except Exception as e:
 	mensaje_error += '\nSe produjo un error al obtener valor de los costos'
+	mensaje_warn = ''
 	print(mensaje_error+str(e))
 	isRuteoOK = False
 
@@ -61,7 +62,9 @@ def validarPuntos(puntos, headers):
 		try:
 			response = requests.request('GET', url, headers=headers, allow_redirects=False)
 		except Exception as e:
-			print('No se recibio respuesta de la API que filtra autopistas')
+			mensaje_warn = 'No se recibio respuesta de la API que filtra autopistas'
+			print(mensaje_warn)
+			raise Exception(mensaje_warn)
 
 		resultado_du = response.json()
 		# print('resultado json:  ' + str(resultado_du))
@@ -258,7 +261,7 @@ def consultarCalculoRuta(request):
 			resultado_json['mensaje'] = 'Respuesta no recibida de destino en CABA'
 			print(resultado_json)
 		except Exception as e:
-			mensaje_error = 'No se obutvo respuesta de una API externa, repita la consulta en otro momento'
+			mensaje_error = str(e)
 			print(type(e))
 			print(resultado_json)
 			resultado_json = getResultadoEnCero()
@@ -401,10 +404,10 @@ def consultarCalculoRutaTarifa(request):
 	# verifica que request tenga origen y destino y que todas las coordenadas 
 	# tengan 2 valores separados por comas
 	response = verifcarRequestCoords(origen, destino, parada1, parada2, parada3)
+	print(response)
 	datos = response['datos']
-	requestOk = response['requestOk']
- 
-	if(requestOk):
+
+	if(response['requestOk']):
 		#gml = True
 		isCostoOK = False
 		print('gmll crudo')
@@ -498,10 +501,10 @@ def consultarCalculoRutaTarifa(request):
 		return JsonResponse(resultado_json)
 	else:
 		resultado_json = getResultadoEnCero()
-		mensaje_error = 'No se recibio el origen o el destino en el formato correcto'
+		#mensaje_error = 'No se recibio el origen o el destino en el formato correcto'
 		resultado_json['total_tarifa'] = 0
 		resultado_json['retorno_caba_tarifa'] = 0
-		resultado_json['mensaje'] = mensaje_error
+		resultado_json['mensaje'] = response['mensaje_error']
 		resultado_json['error'] = True
 		return JsonResponse(resultado_json)
 
