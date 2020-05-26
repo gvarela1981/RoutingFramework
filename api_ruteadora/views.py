@@ -75,7 +75,7 @@ def validarPuntos(puntos, headers):
 
 		locValidado.append(punto)
 	return locValidado
-def armarRespuestaPuntos(datos,gml):
+def armarRespuestaPuntos(datos, gml):
 	"""Funcion que es llamada internamente y que arma diversas consultas a APIs externas
 	para realizar el calculo de una traza definida por los puntos contenidos en datos.
 
@@ -110,7 +110,7 @@ def armarRespuestaPuntos(datos,gml):
 	# importante no se pudo realizar
 	while isRuteoOK:
 		try:
-			response = getRuteo(loc, headers)
+			response = getRuteo(loc, headers, gml)
 		except Exception as e:
 			isRuteoOK = False
 			raise
@@ -154,7 +154,7 @@ def armarRespuestaPuntos(datos,gml):
 				ruteoRetornoCABA = [destino]
 				ruteoRetornoCABA.append([retornoCABA[0], retornoCABA[1], str(retornoCABA[0] + "," + retornoCABA[1])])
 				try:
-					response = getRuteo(ruteoRetornoCABA, headers)
+					response = getRuteo(ruteoRetornoCABA, headers, gml)
 				except Exception as e:
 					isRuteoOK = False
 					mensaje_error = 'La respuesta del ruteo hasta Retorno a CABA no respondio: '
@@ -180,9 +180,9 @@ def armarRespuestaPuntos(datos,gml):
 			resultado_json["total_distancia"] = total_distance
 			resultado_json["retorno_caba_tiempo"] = retorno_caba_time
 			resultado_json["retorno_caba_distancia"] = retorno_caba_distance
-			if gml=='1':
-				print('resultado gml')
-				resultado_json["gml"] = resultado
+			#if gml=='1':
+			print('resultado gml')
+			resultado_json["ruteo"] = resultado
 			return resultado_json
 			#return JsonResponse(resultado_json)
 		else:
@@ -231,7 +231,7 @@ def consultarCalculoRuta(request):
 		parada3 = request.GET.getlist('parada3')
 		destino = request.GET.getlist('destino')
 		gml = request.GET.get('gml')
-
+	gml = 0 if repr(gml) == 'None' else int(gml[0])
 	# verifica que request tenga origen y destino y que todas las coordenadas 
 	# tengan 2 valores separados por comas
 	response = verifcarRequestCoords(origen, destino, parada1, parada2, parada3)
@@ -361,12 +361,12 @@ def consultarCalculoRutaTarifa(request):
 
 	cant_equipaje = cant_equipaje[0] if len(cant_equipaje) > 0 else 0
 	cant_pasajero = cant_pasajero[0] if len(cant_pasajero) > 0 else 0
+	gml = 0 if repr(gml) == 'None' else int(gml[0])
 
 	resultado_json = {}
 	# verifica que request tenga origen y destino y que todas las coordenadas 
 	# tengan 2 valores separados por comas
 	response = verifcarRequestCoords(origen, destino, parada1, parada2, parada3)
-	print(response)
 	datos = response['datos']
 
 	if(response['requestOk']):
@@ -429,7 +429,6 @@ def consultarCalculoRutaTarifa(request):
 				isCostoOK = False
 			# se resolvio si se calcula el costo o no
 
-			print(resultado_json['retorno_caba_distancia'])
 			# Calcular el costo del retorno a CABA
 			if(resultado_json['retorno_caba_distancia'] > 0):
 				try:
@@ -474,28 +473,25 @@ def prepararMensajeRuteo(loc):
 	Prepara el string para la consulta del ruteo
 	"""
 	mensaje ='/'
-	print(type(loc))
 	j = 0
 	for i in loc:
 		if j < len(loc):
-			print(loc)
 			mensaje = mensaje + loc[j][1] + "," + loc[j][0]
-			print(mensaje)
 		if(len(loc) > j + 1):
 			mensaje = mensaje + ';' # la última coordenada no lleva ;
 		j = j + 1
-	mensaje = mensaje + '?overview=full&geometries=geojson'
 	return mensaje
-def getRuteo(loc, headers):
+def getRuteo(loc, headers, gml = True):
 	"""
 	Ejecuta la consulta a la ruta a la API de ruteo
 	y controla que la respuesta tenga los datos requeridos
 	"""
 	validandoRespuesta = True
 	mensaje = prepararMensajeRuteo(loc)
+	if(gml == 0):
+		mensaje = mensaje + '?overview=full&geometries=geojson'
 	# Realizamos la consulta
 	url = server + mensaje
-	print(url)
 	while validandoRespuesta:
 		try:
 			response = requests.request('GET', url, headers=headers, allow_redirects=False)
@@ -511,9 +507,6 @@ def getRuteo(loc, headers):
 				print(resultado["message"])
 				raise Exception(resultado["message"])
 				break
-			print('distancia ')
-			print(resultado['routes'][0]['duration'])
-			print(resultado['routes'][0]['distance'])
 			total_time = resultado['routes'][0]['duration']
 			total_distance = resultado['routes'][0]['distance']
 			validandoRespuesta = False
@@ -561,6 +554,7 @@ def getRetornoCABA(destino, qheaders):
 	return retorno
 def getBandaHoraria():
 	Hora = datetime.datetime.now().time()
+	print(Hora)
 	if(Hora > inicio_servicio_diurno and Hora < inicio_servicio_nocturno):
 		return 'diurna'
 	else:
