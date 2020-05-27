@@ -22,38 +22,111 @@ import json as simplejson
 import datetime
 from django.contrib.gis.geos import GEOSGeometry, Point
 
+# APIs Externas
+server = ''
+server_no_autopista = ''
+# Parametros de Taxi
+global inicio_servicio_diurno
+global inicio_servicio_nocturno
+global bajada_bandera_diurna
+global bajada_bandera_nocturna
+global valor_ficha_diurna
+global valor_ficha_nocturna
+global porcentaje_diurno_ajuste
+global porcentaje_nocturno_ajuste
+global distancia_por_ficha
+
+# Tiempo de vigencia de los parametros
+paramsOkTime = datetime.time(00, 1, 00)
+
+# seteo paramsLastSync en el dia de ayer para forzar sincro al iniciar servicio
+global paramsLastSync # global para poder actualizarla desde una funcion
+paramsLastSync = datetime.datetime.now() - datetime.timedelta(days=1)
+
 # mensaje a devolver en el json cuando se produce un error
 mensaje_error = ''
-#APIs que se consumen, despues de actualizarlas se debe reiniciar servicio
-try:
-	#Server de ruteo
-	objRuteo = Endpoint.objects.filter(nombre='Ruteo')
-	server = objRuteo.values_list('url', flat=True).first()
-	#Server autopista
-	objRuteo = Endpoint.objects.filter(nombre='Filtro de Autopista')
-	server_no_autopista = objRuteo.values_list('url', flat=True).first()
-except Exception as e:
-	mensaje_error += '\nSe produjo un error al obtener las direcciones de las API externas para realizar los calculos'
-	print(mensaje_error+str(e))
-	isRuteoOK = False
+isRuteoOK = False
 
 MAX_POINTS = settings.MAX_POINTS if hasattr(settings, 'MAX_POINTS') else 10
-try:
-	objSettings = Costo.objects.filter(nombre='Costo')
-	inicio_servicio_diurno = objSettings.values_list('inicio_servicio_diurno', flat=True).first()
-	inicio_servicio_nocturno = objSettings.values_list('inicio_servicio_nocturno', flat=True).first()
-	bajada_bandera_diurna = objSettings.values_list('bajada_bandera_diurna', flat=True).first()
-	bajada_bandera_nocturna = objSettings.values_list('bajada_bandera_nocturna', flat=True).first()
-	valor_ficha_diurna = objSettings.values_list('valor_ficha_diurna', flat=True).first()
-	valor_ficha_nocturna = objSettings.values_list('valor_ficha_nocturna', flat=True).first()
-	porcentaje_diurno_ajuste = objSettings.values_list('porcentaje_diurno_ajuste', flat=True).first()
-	porcentaje_nocturno_ajuste = objSettings.values_list('porcentaje_nocturno_ajuste', flat=True).first()
-	distancia_por_ficha = objSettings.values_list('distancia_por_ficha', flat=True).first()
-except Exception as e:
-	mensaje_error += '\nSe produjo un error al obtener valor de los costos'
-	mensaje_warn = ''
-	print(mensaje_error+str(e))
-	isRuteoOK = False
+def syncParametros():
+	'''
+	APIs que se consumen, se actualizan al reiniciar y cada syncTime
+	con cada consulta se ejecuta syncParametros, si la ultima sincronizacion
+	caduco se vuelve a sincronizar
+	'''
+	global paramsLastSync
+	paramsValid = False
+	mensaje_debug= 'Sincronizando parametros'
+	print(mensaje_debug)
+	timeLapse = paramsLastSync + datetime.timedelta(minutes=1)
+	if(datetime.datetime.now().timestamp() > timeLapse.timestamp() ):
+		mensaje_debug = 'La sincronizacion es necesaria'
+		print(mensaje_debug)
+		paramsValid = False
+	else:
+		mensaje_debug = 'La sincronizacion no es necesaria'
+		print(mensaje_debug)
+		paramsValid = True
+	# encierro la sincronizacion de parametros en un while
+	# para asegurarme que la ejecucion no sigue sin setear el parametro
+	# de lo contrario se intenta consultar una API externa sin conocer su url
+	while (paramsValid == False):
+		try:
+			global server
+			global server_no_autopista
+			global inicio_servicio_diurno
+			global inicio_servicio_nocturno
+			global bajada_bandera_diurna
+			global bajada_bandera_nocturna
+			global valor_ficha_diurna
+			global valor_ficha_nocturna
+			global porcentaje_diurno_ajuste
+			global porcentaje_nocturno_ajuste
+			global distancia_por_ficha
+			#Server de ruteo
+			print('buscando url de ruteo')
+			objRuteo = Endpoint.objects.filter(nombre='Ruteo')
+			server = objRuteo.values_list('url', flat=True).first()
+			#Server autopista
+			objRuteo = Endpoint.objects.filter(nombre='Filtro de Autopista')
+			server_no_autopista = objRuteo.values_list('url', flat=True).first()
+			# Cuando llega respuesta dejar de consltar
+			paramsValid = True
+			paramsLastSync = datetime.datetime.now()
+			print(paramsLastSync)
+
+			# print(server)
+			# print(server_no_autopista)
+		except Exception as e:
+			mensaje_error += '\nSe produjo un error al obtener las direcciones de las API externas para realizar los calculos'
+			print(mensaje_error+str(e))
+			# Si no se sincronizan los parametros se calcula el ruteo con los parametros anteriores
+			isRuteoOK = True
+			# Cuando llega respuesta dejar de consltar
+			paramsValid = True
+			paramsLastSync = datetime.datetime.now()
+		try:
+			objSettings = Costo.objects.filter(nombre='Costo')
+			inicio_servicio_diurno = objSettings.values_list('inicio_servicio_diurno', flat=True).first()
+			inicio_servicio_nocturno = objSettings.values_list('inicio_servicio_nocturno', flat=True).first()
+			bajada_bandera_diurna = objSettings.values_list('bajada_bandera_diurna', flat=True).first()
+			bajada_bandera_nocturna = objSettings.values_list('bajada_bandera_nocturna', flat=True).first()
+			valor_ficha_diurna = objSettings.values_list('valor_ficha_diurna', flat=True).first()
+			valor_ficha_nocturna = objSettings.values_list('valor_ficha_nocturna', flat=True).first()
+			porcentaje_diurno_ajuste = objSettings.values_list('porcentaje_diurno_ajuste', flat=True).first()
+			porcentaje_nocturno_ajuste = objSettings.values_list('porcentaje_nocturno_ajuste', flat=True).first()
+			distancia_por_ficha = objSettings.values_list('distancia_por_ficha', flat=True).first()
+			# Cuando llega respuesta dejar de consltar
+			paramsValid = True
+		except Exception as e:
+			mensaje_error += '\nSe produjo un error al obtener valor de los costos'
+			mensaje_warn = ''
+			print(mensaje_error+str(e))
+			# Si no se sincronizan los parametros se calcula el ruteo con los parametros anteriores
+			isRuteoOK = True
+			# Cuando llega respuesta dejar de consltar
+			paramsValid = True
+	# sync complete
 
 def validarPuntos(puntos, headers):
 	locValidado = []
@@ -216,6 +289,8 @@ def consultarCalculoRuta(request):
 	requestOk = False
 	datos = []
 
+	# Sincronizar prametros en memoria con la DB
+	syncParametros()
 	if (request.POST):
 		#incluir el header crsf en la llamada ajax
 		origen = request.POST.getlist('origen')
@@ -338,7 +413,8 @@ def consultarCalculoRutaTarifa(request):
 		total_tiempo, total_distancia, retorno_caba_tiempo, 
 		retorno_caba_distancia, total_tarifa, retorno_caba_tarifa
 	'''
-	
+	# Sincronizar prametros en memoria con la DB
+	syncParametros()
 	if (request.POST):
 		#incluir el header crsf en la llamada ajax
 		origen = request.POST.getlist('origen')
@@ -450,7 +526,6 @@ def consultarCalculoRutaTarifa(request):
 				validarRespuestas = False
 
 		# fin de validarRespuestas
-		print(isCostoOK)
 		if(isCostoOK):
 			resultado_json["total_tarifa"] = total_tarifa
 			resultado_json["retorno_caba_tarifa"] = retorno_caba_tarifa
