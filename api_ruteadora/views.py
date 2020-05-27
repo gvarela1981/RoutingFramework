@@ -41,7 +41,7 @@ paramsOkTime = datetime.time(00, 1, 00)
 
 # seteo paramsLastSync en el dia de ayer para forzar sincro al iniciar servicio
 global paramsLastSync # global para poder actualizarla desde una funcion
-paramsLastSync = datetime.datetime.now() - datetime.timedelta(days=1)
+paramsLastSync = datetime.datetime.now() - datetime.timedelta(days=365)
 
 # mensaje a devolver en el json cuando se produce un error
 mensaje_error = ''
@@ -55,22 +55,31 @@ def syncParametros():
 	caduco se vuelve a sincronizar
 	'''
 	global paramsLastSync
-	paramsValid = False
+	checkForParams = False
+	isParamsOK = False
+	mensaje_error = ''
 	mensaje_debug= 'Sincronizando parametros'
 	print(mensaje_debug)
-	timeLapse = paramsLastSync + datetime.timedelta(minutes=1)
-	if(datetime.datetime.now().timestamp() > timeLapse.timestamp() ):
+	now = datetime.datetime.now()
+	print('last sync: ', paramsLastSync)
+	print('now: ', now)
+	# Convierto el tiempo de vigencia a datetime para poder tomar sus minutos
+	validDateTime = datetime.datetime.combine(paramsLastSync, paramsOkTime)
+	# Calculo fecha y hora en la que expiro la sincronizacion
+	syncExpireDatetime = paramsLastSync + datetime.timedelta(minutes=validDateTime.minute)
+	if( now > syncExpireDatetime ):
 		mensaje_debug = 'La sincronizacion es necesaria'
 		print(mensaje_debug)
-		paramsValid = False
+		checkForParams = False
 	else:
 		mensaje_debug = 'La sincronizacion no es necesaria'
 		print(mensaje_debug)
-		paramsValid = True
+		checkForParams = True
+		isParamsOK = True
 	# encierro la sincronizacion de parametros en un while
 	# para asegurarme que la ejecucion no sigue sin setear el parametro
 	# de lo contrario se intenta consultar una API externa sin conocer su url
-	while (paramsValid == False):
+	while (checkForParams == False):
 		try:
 			global server
 			global server_no_autopista
@@ -84,27 +93,26 @@ def syncParametros():
 			global porcentaje_nocturno_ajuste
 			global distancia_por_ficha
 			#Server de ruteo
-			print('buscando url de ruteo')
+			mensaje_debug = 'buscando url de ruteo'
+			print(mensaje_debug)
 			objRuteo = Endpoint.objects.filter(nombre='Ruteo')
 			server = objRuteo.values_list('url', flat=True).first()
 			#Server autopista
 			objRuteo = Endpoint.objects.filter(nombre='Filtro de Autopista')
 			server_no_autopista = objRuteo.values_list('url', flat=True).first()
 			# Cuando llega respuesta dejar de consltar
-			paramsValid = True
+			checkForParams = True
 			paramsLastSync = datetime.datetime.now()
-			print(paramsLastSync)
-
-			# print(server)
-			# print(server_no_autopista)
+			mensaje_debug = 'sincroniazado en: '
+			print(mensaje_debug, paramsLastSync)
+			isParamsOK = True
 		except Exception as e:
 			mensaje_error += '\nSe produjo un error al obtener las direcciones de las API externas para realizar los calculos'
 			print(mensaje_error+str(e))
-			# Si no se sincronizan los parametros se calcula el ruteo con los parametros anteriores
-			isRuteoOK = True
-			# Cuando llega respuesta dejar de consltar
-			paramsValid = True
+			checkForParams = True
 			paramsLastSync = datetime.datetime.now()
+			isParamsOK = False
+			raise Exception(mensaje_error)
 		try:
 			objSettings = Costo.objects.filter(nombre='Costo')
 			inicio_servicio_diurno = objSettings.values_list('inicio_servicio_diurno', flat=True).first()
@@ -117,16 +125,19 @@ def syncParametros():
 			porcentaje_nocturno_ajuste = objSettings.values_list('porcentaje_nocturno_ajuste', flat=True).first()
 			distancia_por_ficha = objSettings.values_list('distancia_por_ficha', flat=True).first()
 			# Cuando llega respuesta dejar de consltar
-			paramsValid = True
+			checkForParams = True
+			isParamsOK = True
 		except Exception as e:
-			mensaje_error += '\nSe produjo un error al obtener valor de los costos'
+			mensaje_error += 'Se produjo un error al obtener valor de los costos: ' + str(e)
 			mensaje_warn = ''
-			print(mensaje_error+str(e))
-			# Si no se sincronizan los parametros se calcula el ruteo con los parametros anteriores
-			isRuteoOK = True
-			# Cuando llega respuesta dejar de consltar
-			paramsValid = True
+			print(mensaje_error)
+			# Cuando llega respuesta dejar de consultar
+			checkForParams = True
+			isParamsOK = False
 	# sync complete
+	syncStatus = 'OK' if isParamsOK else 'Fail'
+	response = dict(status = syncStatus, mensaje_error = mensaje_error)
+	return response
 
 def validarPuntos(puntos, headers):
 	locValidado = []
@@ -285,12 +296,13 @@ def consultarCalculoRuta(request):
 	varialble requerida: origen, destino
 	variable opcional: punto1, punto2, punto3
 	'''
+	# Sincronizar prametros en memoria con la DB
+	mensaje_error = ''
+	syncStatus = syncParametros()
 	resultado_json = {}
 	requestOk = False
 	datos = []
 
-	# Sincronizar prametros en memoria con la DB
-	syncParametros()
 	if (request.POST):
 		#incluir el header crsf en la llamada ajax
 		origen = request.POST.getlist('origen')
@@ -312,7 +324,7 @@ def consultarCalculoRuta(request):
 	response = verifcarRequestCoords(origen, destino, parada1, parada2, parada3)
 
 	datos = response['datos']
-	if(response['requestOk']):
+	if(response['requestOk'] and syncStatus['status'] == 'OK'):
 		#gml = True
 		print('gmll crudo')
 		print(gml)
@@ -342,7 +354,13 @@ def consultarCalculoRuta(request):
 			resultado_json['mensaje'] = mensaje_error
 		return JsonResponse(resultado_json)
 	else:
+		resultado_json = getResultadoEnCero()
+		if 'mensaje_error' in syncStatus:
+			mensaje_error += syncStatus['mensaje_error']
+		if 'mensaje_error' in response:
+			mensaje_error += response['mensaje_error']
 		resultado_json["mensaje"] = response['mensaje_error']
+		resultado_json['mensaje'] = mensaje_error
 		resultado_json["error"] = True
 		return JsonResponse(resultado_json)
 def verifcarRequestCoords(origen, destino, parada1, parada2, parada3):
@@ -414,7 +432,8 @@ def consultarCalculoRutaTarifa(request):
 		retorno_caba_distancia, total_tarifa, retorno_caba_tarifa
 	'''
 	# Sincronizar prametros en memoria con la DB
-	syncParametros()
+	mensaje_error = ''
+	syncStatus = syncParametros()
 	if (request.POST):
 		#incluir el header crsf en la llamada ajax
 		origen = request.POST.getlist('origen')
@@ -444,8 +463,7 @@ def consultarCalculoRutaTarifa(request):
 	# tengan 2 valores separados por comas
 	response = verifcarRequestCoords(origen, destino, parada1, parada2, parada3)
 	datos = response['datos']
-
-	if(response['requestOk']):
+	if(response['requestOk'] and syncStatus['status'] == 'OK'):
 		#gml = True
 		isCostoOK = False
 		print('gmll crudo')
@@ -537,10 +555,14 @@ def consultarCalculoRutaTarifa(request):
 		return JsonResponse(resultado_json)
 	else:
 		resultado_json = getResultadoEnCero()
+		if 'mensaje_error' in syncStatus:
+			mensaje_error += syncStatus['mensaje_error']
+		if 'mensaje_error' in response:
+			mensaje_error += response['mensaje_error']
 		#mensaje_error = 'No se recibio el origen o el destino en el formato correcto'
 		resultado_json['total_tarifa'] = 0
 		resultado_json['retorno_caba_tarifa'] = 0
-		resultado_json['mensaje'] = response['mensaje_error']
+		resultado_json['mensaje'] = mensaje_error
 		resultado_json['error'] = True
 		return JsonResponse(resultado_json)
 def prepararMensajeRuteo(loc):
