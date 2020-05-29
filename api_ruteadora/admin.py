@@ -5,7 +5,7 @@ from django.contrib.gis import admin
 
 from .models import Endpoint, Costo, Ruteo
 from api_ruteadora.actions import setear_publicable, setear_no_publicable, setear_verificado, setear_no_verificado
-
+from django import forms
 from django.conf import settings
 from .models import *
 from django.contrib import messages
@@ -50,28 +50,52 @@ class RuteoAdmin(LeafletGeoAdmin):
             messages.error(request, resultado['texto'])
         super(RuteoAdmin, self).save_model(request, obj, form, change)
 
+class ComunaAdmin(LeafletGeoAdmin):
+  default_zoom = 1
+  modifiable = True
+  default_lon = 101780
+  default_lat = 101900
+  map_srid = settings.SRID
+  readonly_fields=('id', 'timestamp_alta', 'timestamp_modificacion')
+  search_fields = ('nombre', 'nombre_original')
+  fieldsets = [
+      ('Informacion básica', {'fields': ['nombre','nombre_original', 'barrios']}),
+      ('Informacion de la Ubicación',   {'fields': ['the_geom']}),
+      ('Misc',   {'fields': ['observaciones_publicables', 'observaciones_privadas', 'timestamp_alta','timestamp_modificacion', 'publicable', 'verificado']})]
+  list_display = [f.name for f in Comuna._meta.fields if f.name not in ('the_geom')]
+  list_display_links = ['id', 'nombre']
+  ordering = ["-id"]
+  list_filter = ['publicable', 'verificado', ]
+  date_hierarchy = 'timestamp_modificacion'
+  actions = [setear_publicable, setear_no_publicable, setear_verificado, setear_no_verificado]
+
+class CostoAdmin(admin.GeoModelAdmin):
+  #do something
+  fields = ('fecha_creacion', 'fecha_modificacion', 'fecha_inicio', 'fecha_fin', 'observacion', 'nombre', 'inicio_servicio_diurno', 'inicio_servicio_nocturno', 'bajada_bandera_diurna', 'bajada_bandera_nocturna', 'valor_ficha_diurna', 'valor_ficha_nocturna', 'porcentaje_diurno_ajuste', 'porcentaje_nocturno_ajuste', 'distancia_por_ficha')
+  date_hierarchy = 'fecha_modificacion'
+  readonly_fields=('fecha_creacion', 'fecha_modificacion')
+  class Meta:
+    model = Costo
+
+  def save_model(self, request, obj, form, change):
+    # obj.added_by = request.user ### guardar el usuario que modifica
+    fecha_inicio = form.cleaned_data.get('fecha_inicio')
+    fecha_fin = form.cleaned_data.get('fecha_fin')
+    resultadoOk, resultado = obj.save(fecha_inicio, fecha_fin)
+    #resultado = obj.save()
+    print(resultadoOk)
+    if resultadoOk:
+      print('respondiendo a usuario')
+      print(resultado['texto'])
+      try:
+        self.message_user(request, resultado['texto'])
+      except Exception as e:
+        print('Fallo en admin.py CostoAdmin.save_model: ', e)
+    else:
+      messages.error(request, resultado['texto'])
 
 admin.site.register(Endpoint)
-admin.site.register(Costo)
-admin.site.register( Ruteo, RuteoAdmin)
-
-class ComunaAdmin(LeafletGeoAdmin):
-    default_zoom = 1
-    modifiable = True
-    default_lon = 101780
-    default_lat = 101900
-    map_srid = settings.SRID
-    readonly_fields=('id', 'timestamp_alta', 'timestamp_modificacion')
-    search_fields = ('nombre', 'nombre_original')
-    fieldsets = [
-        ('Informacion básica', {'fields': ['nombre','nombre_original', 'barrios']}),
-        ('Informacion de la Ubicación',   {'fields': ['the_geom']}),
-        ('Misc',   {'fields': ['observaciones_publicables', 'observaciones_privadas', 'timestamp_alta','timestamp_modificacion', 'publicable', 'verificado']})]
-    list_display = [f.name for f in Comuna._meta.fields if f.name not in ('the_geom')]
-    list_display_links = ['id', 'nombre']
-    ordering = ["-id"]
-    list_filter = ['publicable', 'verificado', ]
-    date_hierarchy = 'timestamp_modificacion'
-    actions = [setear_publicable, setear_no_publicable, setear_verificado, setear_no_verificado]
-
+#admin.site.register(Costo)
+admin.site.register(Costo, CostoAdmin)
+admin.site.register(Ruteo, RuteoAdmin)
 admin.site.register(Comuna, ComunaAdmin)

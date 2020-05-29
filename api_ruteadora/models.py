@@ -7,9 +7,6 @@ from django.contrib.gis.db import models
 from django.conf import settings
 from django.db.models import Manager as GeoManager
 from django.contrib.gis.geos import GEOSGeometry, Point
-# from commons.commons import normalizar_texto, armarRespuestaGeoLayer, ObjectContent
-# from util.geoUtils import normalizarGeocodificarYConsultarDelimitaciones
-# from api.settings import DATE_FORMAT_MF
 
 class Endpoint(models.Model):
     nombre = models.CharField('Nombre del Endpoint',max_length=20, unique=True)
@@ -27,8 +24,8 @@ class Costo(models.Model):
 	las variables que inician con el prefijo "conf" son puramente descriptivas
 	y no tienen impacto en el comportamiento
 	"""
-	fecha_inicio = models.DateTimeField('Fecha de inicio del valor',  default=timezone.now)
-	fecha_fin = models.DateTimeField('Fecha de fin del valor',  default=timezone.now)
+	fecha_inicio = models.DateTimeField('Fecha de inicio',  default=timezone.now)
+	fecha_fin = models.DateTimeField('Fecha de fin',  default=timezone.now)
 	observacion = models.CharField('Observaciones', max_length=200, blank = True)
 	nombre	= models.CharField('Costos', default='Costo', max_length=20, unique=True)
 	inicio_servicio_diurno = models.TimeField('Inicio del servicio diurno', default='06:00:00')
@@ -43,6 +40,57 @@ class Costo(models.Model):
 	
 	fecha_creacion = models.DateTimeField('Fecha de Creacion', auto_now_add=True)
 	fecha_modificacion = models.DateTimeField('Fecha de Modificacion',  default=timezone.now)
+
+	class Meta:
+		ordering = ['fecha_inicio']
+		verbose_name = 'Parametro'
+		verbose_name_plural = 'Parametros'
+	# @classmethod
+	# def from_db(cls, db, field_names, values):
+ #    # Default implementation of from_db() (subject to change and could
+ #    # be replaced with super()).
+	# 	if len(values) != len(cls._meta.concrete_fields):
+	# 		values = list(values)
+	# 		values.reverse()
+	# 		values = [
+	# 			values.pop() if f.attname in field_names else DEFERRED
+	# 			for f in cls._meta.concrete_fields
+	# 		]
+	# 	instance = cls(*values)
+	# 	instance._state.adding = False
+	# 	instance._state.db = db
+	# 	# customization to store the original field values on the instance
+	# 	instance._loaded_values = dict(zip(field_names, values))
+	# 	return instance
+		
+	@classmethod
+	def save(self, *args, **kwargs):
+		fecha_inicio = args[0]
+		fecha_fin = args[1]
+		print(fecha_inicio)
+		print(fecha_fin)
+		# Armo la consulta, buscar paramtros guardados en los 4 casos posibles de solapamiento de fechas
+		# Caso 1, existe un conjunto de datos que inicia antes de fecha_inicio y finaliza antes de fecha_fin
+		fechas_en_conflicto = Costo.objects.filter(fecha_inicio__lt=fecha_inicio)
+		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__gt=fecha_fin)
+		fechas_en_conflicto_resultado = fechas_en_conflicto.values('id', 'fecha_inicio', 'fecha_fin', 'observacion')
+		# Caso 2, existe un conjunto de datos que inicia despues de fecha_inicio y finaliza antes de fecha_fin
+		# Caso 3, existe un conjunto de datos que inicia despues de fecha_inicio y finaliza despues de fecha_fin 
+		# Caso 4, existe un conjunto de datos que inicia antes de fecha_inicio y finaliza despues de fecha_fin 
+		print(fechas_en_conflicto_resultado)
+		resultadoOK = True
+		resultado = dict()
+		resultado['texto'] = ''
+		try:    
+			super(Costo, self).save(*args, **kwargs)
+			mensaje_debug = 'Se guardaron los cambios'
+			resultado['texto'] = mensaje_debug
+		except Exception as e:
+			error_fail = 'Fallo el save: ' + str(e)
+			resultado['texto'] = error_fail
+			print(resultado['texto'])
+			resultadoOK = False
+		return resultadoOK, resultado
 
 	def __str__(self):
 		return self.nombre
