@@ -45,52 +45,49 @@ class Costo(models.Model):
 		ordering = ['fecha_inicio']
 		verbose_name = 'Parametro'
 		verbose_name_plural = 'Parametros'
-	# @classmethod
-	# def from_db(cls, db, field_names, values):
- #    # Default implementation of from_db() (subject to change and could
- #    # be replaced with super()).
-	# 	if len(values) != len(cls._meta.concrete_fields):
-	# 		values = list(values)
-	# 		values.reverse()
-	# 		values = [
-	# 			values.pop() if f.attname in field_names else DEFERRED
-	# 			for f in cls._meta.concrete_fields
-	# 		]
-	# 	instance = cls(*values)
-	# 	instance._state.adding = False
-	# 	instance._state.db = db
-	# 	# customization to store the original field values on the instance
-	# 	instance._loaded_values = dict(zip(field_names, values))
-	# 	return instance
-		
-	@classmethod
+
 	def save(self, *args, **kwargs):
-		fecha_inicio = args[0]
-		fecha_fin = args[1]
-		print(fecha_inicio)
-		print(fecha_fin)
-		# Armo la consulta, buscar paramtros guardados en los 4 casos posibles de solapamiento de fechas
-		# Caso 1, existe un conjunto de datos que inicia antes de fecha_inicio y finaliza antes de fecha_fin
-		fechas_en_conflicto = Costo.objects.filter(fecha_inicio__lt=fecha_inicio)
-		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__gt=fecha_fin)
-		fechas_en_conflicto_resultado = fechas_en_conflicto.values('id', 'fecha_inicio', 'fecha_fin', 'observacion')
-		# Caso 2, existe un conjunto de datos que inicia despues de fecha_inicio y finaliza antes de fecha_fin
-		# Caso 3, existe un conjunto de datos que inicia despues de fecha_inicio y finaliza despues de fecha_fin 
-		# Caso 4, existe un conjunto de datos que inicia antes de fecha_inicio y finaliza despues de fecha_fin 
-		print(fechas_en_conflicto_resultado)
-		resultadoOK = True
 		resultado = dict()
 		resultado['texto'] = ''
-		try:    
-			super(Costo, self).save(*args, **kwargs)
-			mensaje_debug = 'Se guardaron los cambios'
-			resultado['texto'] = mensaje_debug
-		except Exception as e:
-			error_fail = 'Fallo el save: ' + str(e)
-			resultado['texto'] = error_fail
+		resultado['resultadoOK'] = True
+		fechas_en_conflicto_resultado = []
+		# Armo la consulta, buscar paramtros guardados en los 4 casos posibles de solapamiento de fechas
+		# Caso 1, existe un conjunto de datos que inicia antes del nuevo fecha_inicio y finaliza despues del nuevo fecha_inicio y antes del nuevo fecha_fin
+		# Caso 4, existe un conjunto de datos que inicia antes del nuevo fecha_inicio y finaliza despues del nuevo fecha_inicio y despues del nuevo fecha_fin
+		fechas_en_conflicto = Costo.objects.filter(fecha_inicio__lt=self.fecha_inicio)
+		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__gt=self.fecha_inicio)
+		for i in fechas_en_conflicto:
+			fechas_en_conflicto_resultado.append(i.nombre)
+		# Caso 2, existe un conjunto de datos que inicia despues del nuevo fecha_inicio y finaliza antes del nuevo fecha_fin
+		fechas_en_conflicto = Costo.objects.filter(fecha_inicio__gt=self.fecha_inicio)
+		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__lt=self.fecha_fin)
+		for i in fechas_en_conflicto:
+			fechas_en_conflicto_resultado.append(i.nombre)
+		# Caso 3, existe un conjunto de datos que inicia despues del nuevo fecha_inicio y finaliza despues del nuevo fecha_fin
+		fechas_en_conflicto = Costo.objects.filter(fecha_inicio__gt=self.fecha_inicio)
+		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__gt=self.fecha_fin)
+		for i in fechas_en_conflicto:
+			fechas_en_conflicto_resultado.append(i.nombre)
+
+		print(fechas_en_conflicto_resultado)
+		print('Fecha inicio y fin a grabar: ', self.fecha_inicio, self.fecha_fin)
+		if(len(fechas_en_conflicto_resultado) == 0):
+			try:
+				print('grabando')
+				super(Costo, self).save(*args, **kwargs)
+				# El mensaje de Ok lo envía la clase padre, solo procesamos el mensaje de error
+			except Exception as e:
+				error_fail = 'Fallo el save: ' + str(e)
+				resultado['texto'] = error_fail
+				print(resultado['texto'])
+				resultado['resultadoOK'] = False
+		else:
+			error_debug = 'Hay ' + str(len(fechas_en_conflicto_resultado)) + ' parametros que se solapan con el nuevo parametro: '
+			error_debug += str(fechas_en_conflicto_resultado)
+			resultado['texto'] = error_debug
 			print(resultado['texto'])
-			resultadoOK = False
-		return resultadoOK, resultado
+			resultado['resultadoOK'] = False
+		return resultado
 
 	def __str__(self):
 		return self.nombre

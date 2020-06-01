@@ -78,13 +78,10 @@ class CostoAdmin(admin.GeoModelAdmin):
     model = Costo
 
   def save_model(self, request, obj, form, change):
-    # obj.added_by = request.user ### guardar el usuario que modifica
-    fecha_inicio = form.cleaned_data.get('fecha_inicio')
-    fecha_fin = form.cleaned_data.get('fecha_fin')
-    resultadoOk, resultado = obj.save(fecha_inicio, fecha_fin)
-    #resultado = obj.save()
-    print(resultadoOk)
-    if resultadoOk:
+    # bj.added_by = request.user ### guardar el usuario que modifica
+    resultado = obj.save()
+    print('El proceso de grabado responde: ', resultado)
+    if resultado['resultadoOK']:
       print('respondiendo a usuario')
       print(resultado['texto'])
       try:
@@ -93,9 +90,9 @@ class CostoAdmin(admin.GeoModelAdmin):
         print('Fallo en admin.py CostoAdmin.save_model: ', e)
     else:
       messages.error(request, resultado['texto'])
+      super(CostoAdmin, self).save_model(request, obj, form, change)
 
 admin.site.register(Endpoint)
-#admin.site.register(Costo)
 admin.site.register(Costo, CostoAdmin)
 admin.site.register(Ruteo, RuteoAdmin)
 admin.site.register(Comuna, ComunaAdmin)
