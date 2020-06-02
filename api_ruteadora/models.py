@@ -63,17 +63,15 @@ class Costo(models.Model):
 		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__lt=self.fecha_fin)
 		for i in fechas_en_conflicto:
 			fechas_en_conflicto_resultado.append(i.nombre)
-		# Caso 3, existe un conjunto de datos que inicia despues del nuevo fecha_inicio y finaliza despues del nuevo fecha_fin
+		# Caso 3, existe un conjunto de datos que inicia despues del nuevo fecha_inicio y antes del nuevo fecha_fin
 		fechas_en_conflicto = Costo.objects.filter(fecha_inicio__gt=self.fecha_inicio)
+		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_inicio__lt=self.fecha_fin)
 		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__gt=self.fecha_fin)
 		for i in fechas_en_conflicto:
 			fechas_en_conflicto_resultado.append(i.nombre)
 
-		print(fechas_en_conflicto_resultado)
-		print('Fecha inicio y fin a grabar: ', self.fecha_inicio, self.fecha_fin)
 		if(len(fechas_en_conflicto_resultado) == 0):
 			try:
-				print('grabando')
 				super(Costo, self).save(*args, **kwargs)
 				# El mensaje de Ok lo envía la clase padre, solo procesamos el mensaje de error
 			except Exception as e:
@@ -85,7 +83,7 @@ class Costo(models.Model):
 			error_debug = 'Hay ' + str(len(fechas_en_conflicto_resultado)) + ' parametros que se solapan con el nuevo parametro: '
 			error_debug += str(fechas_en_conflicto_resultado)
 			resultado['texto'] = error_debug
-			print(resultado['texto'])
+			print(error_debug)
 			resultado['resultadoOK'] = False
 		return resultado
 
