@@ -70,20 +70,16 @@ class Costo(models.Model):
 		for i in fechas_en_conflicto:
 			fechas_en_conflicto_resultado.append(i.nombre)
 
-		if(len(fechas_en_conflicto_resultado) == 0):
-			try:
-				super(Costo, self).save(*args, **kwargs)
-				# El mensaje de Ok lo envía la clase padre, solo procesamos el mensaje de error
-			except Exception as e:
-				error_fail = 'Fallo el save: ' + str(e)
-				resultado['texto'] = error_fail
-				print(resultado['texto'])
-				resultado['resultadoOK'] = False
+		if(len(fechas_en_conflicto_resultado) == 0 or ( len(fechas_en_conflicto_resultado) == 1 and fechas_en_conflicto_resultado[0] is not self.nombre)):
+			# El mensaje de Ok lo envía la clase padre, solo procesamos el mensaje de error
+			super(Costo, self).save(*args, **kwargs)
+			resultado['texto'] = ''
 		else:
-			error_debug = 'Hay ' + str(len(fechas_en_conflicto_resultado)) + ' parametros que se solapan con el nuevo parametro: '
-			error_debug += str(fechas_en_conflicto_resultado)
-			resultado['texto'] = error_debug
+			error_debug = 'Hay ' + str(len(fechas_en_conflicto_resultado)) + ' parametros que se solapan con '
+			error_debug += self.nombre + ' ' + str(fechas_en_conflicto_resultado)
 			print(error_debug)
+			resultado['texto'] = error_debug
+			resultado['cant_registros'] = len(fechas_en_conflicto_resultado)
 			resultado['resultadoOK'] = False
 		return resultado
 
