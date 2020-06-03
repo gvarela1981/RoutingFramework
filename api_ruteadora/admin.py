@@ -10,7 +10,6 @@ from django.conf import settings
 from .models import *
 from django.contrib import messages
 from leaflet.admin import LeafletGeoAdmin
-from django.utils.translation import ngettext
 
 #Panel de Control Ruteo
 class RuteoAdmin(LeafletGeoAdmin):
@@ -81,11 +80,10 @@ class CostoAdmin(admin.GeoModelAdmin):
   def save_model(self, request, obj, form, change):
     # bj.added_by = request.user ### guardar el usuario que modifica
     resultado = obj.save()
-    if (change):
-      print(change)
+    if(resultado['resultadoOK']):
       self.message_user(request, resultado['texto'])
     else:
-      print(change)
+      messages.set_level(request, messages.ERROR)
       messages.error(request, resultado['texto'])
 
 admin.site.register(Endpoint)

@@ -50,32 +50,44 @@ class Costo(models.Model):
 		resultado = dict()
 		resultado['texto'] = ''
 		resultado['resultadoOK'] = True
-		fechas_en_conflicto_resultado = []
+		fechas_en_conflicto_resultado = set()
 		# Armo la consulta, buscar paramtros guardados en los 4 casos posibles de solapamiento de fechas
 		# Caso 1, existe un conjunto de datos que inicia antes del nuevo fecha_inicio y finaliza despues del nuevo fecha_inicio y antes del nuevo fecha_fin
 		# Caso 4, existe un conjunto de datos que inicia antes del nuevo fecha_inicio y finaliza despues del nuevo fecha_inicio y despues del nuevo fecha_fin
 		fechas_en_conflicto = Costo.objects.filter(fecha_inicio__lt=self.fecha_inicio)
 		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__gt=self.fecha_inicio)
 		for i in fechas_en_conflicto:
-			fechas_en_conflicto_resultado.append(i.nombre)
+			fechas_en_conflicto_resultado.add(i.nombre)
+			print(i.nombre)
 		# Caso 2, existe un conjunto de datos que inicia despues del nuevo fecha_inicio y finaliza antes del nuevo fecha_fin
 		fechas_en_conflicto = Costo.objects.filter(fecha_inicio__gt=self.fecha_inicio)
 		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__lt=self.fecha_fin)
 		for i in fechas_en_conflicto:
-			fechas_en_conflicto_resultado.append(i.nombre)
+			fechas_en_conflicto_resultado.add(i.nombre)
+			print(i.nombre)
 		# Caso 3, existe un conjunto de datos que inicia despues del nuevo fecha_inicio y antes del nuevo fecha_fin
 		fechas_en_conflicto = Costo.objects.filter(fecha_inicio__gt=self.fecha_inicio)
 		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_inicio__lt=self.fecha_fin)
 		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__gt=self.fecha_fin)
 		for i in fechas_en_conflicto:
-			fechas_en_conflicto_resultado.append(i.nombre)
+			fechas_en_conflicto_resultado.add(i.nombre)
+			print(i.nombre)
+		print('fechas_en_conflicto_resultado es: ', fechas_en_conflicto_resultado)
+		# Caso 5, la nueva fecha_fin es menor a la nueva fecha_inicio
+		if(self.fecha_inicio > self.fecha_fin):
+			fechas_en_conflicto_resultado.add('La fecha de inicio es posterior a la fecha de fin')
 
-		if(len(fechas_en_conflicto_resultado) == 0 or ( len(fechas_en_conflicto_resultado) == 1 and fechas_en_conflicto_resultado[0] is not self.nombre)):
+		print('fechas_en_conflicto_resultado es: ', fechas_en_conflicto_resultado)
+		# Si el set de parametros entra en conflicto con sigo mismo lo excluyo porque el cambio esta permitido
+		if self.nombre in fechas_en_conflicto_resultado:
+			fechas_en_conflicto_resultado.remove(self.nombre)
+		# Si no hay set de parametros en conflicto de fechas lo grabo
+		if(len(fechas_en_conflicto_resultado) == 0):
 			# El mensaje de Ok lo envía la clase padre, solo procesamos el mensaje de error
 			super(Costo, self).save(*args, **kwargs)
 			resultado['texto'] = ''
 		else:
-			error_debug = 'Hay ' + str(len(fechas_en_conflicto_resultado)) + ' parametros que se solapan con '
+			error_debug = 'No se puede grabar el registro porque hay ' + str(len(fechas_en_conflicto_resultado)) + ' parametros que se solapan con '
 			error_debug += self.nombre + ' ' + str(fechas_en_conflicto_resultado)
 			print(error_debug)
 			resultado['texto'] = error_debug
