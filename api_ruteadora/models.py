@@ -7,9 +7,6 @@ from django.contrib.gis.db import models
 from django.conf import settings
 from django.db.models import Manager as GeoManager
 from django.contrib.gis.geos import GEOSGeometry, Point
-# from commons.commons import normalizar_texto, armarRespuestaGeoLayer, ObjectContent
-# from util.geoUtils import normalizarGeocodificarYConsultarDelimitaciones
-# from api.settings import DATE_FORMAT_MF
 
 class Endpoint(models.Model):
     nombre = models.CharField('Nombre del Endpoint',max_length=20, unique=True)
@@ -27,8 +24,8 @@ class Costo(models.Model):
 	las variables que inician con el prefijo "conf" son puramente descriptivas
 	y no tienen impacto en el comportamiento
 	"""
-	fecha_inicio = models.DateTimeField('Fecha de inicio del valor',  default=timezone.now)
-	fecha_fin = models.DateTimeField('Fecha de fin del valor',  default=timezone.now)
+	fecha_inicio = models.DateTimeField('Fecha de inicio',  default=timezone.now)
+	fecha_fin = models.DateTimeField('Fecha de fin',  default=timezone.now)
 	observacion = models.CharField('Observaciones', max_length=200, blank = True)
 	nombre	= models.CharField('Costos', default='Costo', max_length=20, unique=True)
 	inicio_servicio_diurno = models.TimeField('Inicio del servicio diurno', default='06:00:00')
@@ -43,6 +40,55 @@ class Costo(models.Model):
 	
 	fecha_creacion = models.DateTimeField('Fecha de Creacion', auto_now_add=True)
 	fecha_modificacion = models.DateTimeField('Fecha de Modificacion',  default=timezone.now)
+
+	class Meta:
+		ordering = ['fecha_inicio']
+		verbose_name = 'Parametro'
+		verbose_name_plural = 'Parametros'
+
+	def save(self, *args, **kwargs):
+		resultado = dict()
+		resultado['texto'] = ''
+		resultado['resultadoOK'] = True
+		fechas_en_conflicto_resultado = set()
+		# Armo la consulta, buscar paramtros guardados en los 4 casos posibles de solapamiento de fechas
+		# Caso 1, existe un conjunto de datos que inicia antes del nuevo fecha_inicio y finaliza despues del nuevo fecha_inicio y antes del nuevo fecha_fin
+		# Caso 4, existe un conjunto de datos que inicia antes del nuevo fecha_inicio y finaliza despues del nuevo fecha_inicio y despues del nuevo fecha_fin
+		fechas_en_conflicto = Costo.objects.filter(fecha_inicio__lt=self.fecha_inicio)
+		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__gt=self.fecha_inicio)
+		for i in fechas_en_conflicto:
+			fechas_en_conflicto_resultado.add(i.nombre)
+		# Caso 2, existe un conjunto de datos que inicia despues del nuevo fecha_inicio y finaliza antes del nuevo fecha_fin
+		fechas_en_conflicto = Costo.objects.filter(fecha_inicio__gt=self.fecha_inicio)
+		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__lt=self.fecha_fin)
+		for i in fechas_en_conflicto:
+			fechas_en_conflicto_resultado.add(i.nombre)
+		# Caso 3, existe un conjunto de datos que inicia despues del nuevo fecha_inicio y antes del nuevo fecha_fin
+		fechas_en_conflicto = Costo.objects.filter(fecha_inicio__gt=self.fecha_inicio)
+		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_inicio__lt=self.fecha_fin)
+		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__gt=self.fecha_fin)
+		for i in fechas_en_conflicto:
+			fechas_en_conflicto_resultado.add(i.nombre)
+		# Caso 5, la nueva fecha_fin es menor a la nueva fecha_inicio
+		if(self.fecha_inicio > self.fecha_fin):
+			fechas_en_conflicto_resultado.add('La fecha de inicio es posterior a la fecha de fin')
+
+		# Si el set de parametros entra en conflicto con sigo mismo lo excluyo porque el cambio esta permitido
+		if self.nombre in fechas_en_conflicto_resultado:
+			fechas_en_conflicto_resultado.remove(self.nombre)
+		# Si no hay set de parametros en conflicto de fechas lo grabo
+		if(len(fechas_en_conflicto_resultado) == 0):
+			# El mensaje de Ok lo envía la clase padre, solo procesamos el mensaje de error
+			super(Costo, self).save(*args, **kwargs)
+			resultado['texto'] = ''
+		else:
+			error_debug = 'No se puede grabar el registro porque hay ' + str(len(fechas_en_conflicto_resultado)) + ' parametros que se solapan con '
+			error_debug += self.nombre + ' ' + str(fechas_en_conflicto_resultado)
+			print(error_debug)
+			resultado['texto'] = error_debug
+			resultado['cant_registros'] = len(fechas_en_conflicto_resultado)
+			resultado['resultadoOK'] = False
+		return resultado
 
 	def __str__(self):
 		return self.nombre
