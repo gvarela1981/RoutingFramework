@@ -114,7 +114,12 @@ def syncParametros():
 			isParamsOK = False
 			raise Exception(mensaje_error)
 		try:
-			objSettings = Costo.objects.filter(nombre='Costo')
+			objSettings = Costo.objects.filter(fecha_inicio__lte=now).filter(fecha_fin__gte=now)
+			# Si no hay parametros vigentes en esta fecha toma el anterior mas proximo
+			if(len(objSettings) == 0):
+				error_debug = 'No hay parametros validos para esta fecha, buscando anterior'
+				print(error_debug)
+				objSettings = Costo.objects.filter(fecha_inicio__lte=now).filter(fecha_fin__lte=now).order_by('fecha_fin').reverse()
 			inicio_servicio_diurno = objSettings.values_list('inicio_servicio_diurno', flat=True).first()
 			inicio_servicio_nocturno = objSettings.values_list('inicio_servicio_nocturno', flat=True).first()
 			bajada_bandera_diurna = objSettings.values_list('bajada_bandera_diurna', flat=True).first()
