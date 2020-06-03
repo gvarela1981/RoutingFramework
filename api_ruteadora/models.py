@@ -58,26 +58,21 @@ class Costo(models.Model):
 		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__gt=self.fecha_inicio)
 		for i in fechas_en_conflicto:
 			fechas_en_conflicto_resultado.add(i.nombre)
-			print(i.nombre)
 		# Caso 2, existe un conjunto de datos que inicia despues del nuevo fecha_inicio y finaliza antes del nuevo fecha_fin
 		fechas_en_conflicto = Costo.objects.filter(fecha_inicio__gt=self.fecha_inicio)
 		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__lt=self.fecha_fin)
 		for i in fechas_en_conflicto:
 			fechas_en_conflicto_resultado.add(i.nombre)
-			print(i.nombre)
 		# Caso 3, existe un conjunto de datos que inicia despues del nuevo fecha_inicio y antes del nuevo fecha_fin
 		fechas_en_conflicto = Costo.objects.filter(fecha_inicio__gt=self.fecha_inicio)
 		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_inicio__lt=self.fecha_fin)
 		fechas_en_conflicto = fechas_en_conflicto.filter(fecha_fin__gt=self.fecha_fin)
 		for i in fechas_en_conflicto:
 			fechas_en_conflicto_resultado.add(i.nombre)
-			print(i.nombre)
-		print('fechas_en_conflicto_resultado es: ', fechas_en_conflicto_resultado)
 		# Caso 5, la nueva fecha_fin es menor a la nueva fecha_inicio
 		if(self.fecha_inicio > self.fecha_fin):
 			fechas_en_conflicto_resultado.add('La fecha de inicio es posterior a la fecha de fin')
 
-		print('fechas_en_conflicto_resultado es: ', fechas_en_conflicto_resultado)
 		# Si el set de parametros entra en conflicto con sigo mismo lo excluyo porque el cambio esta permitido
 		if self.nombre in fechas_en_conflicto_resultado:
 			fechas_en_conflicto_resultado.remove(self.nombre)
