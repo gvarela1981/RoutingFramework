@@ -220,7 +220,7 @@ def armarRespuestaPuntos(datos, gml):
 			
 			# Consultar punto de retorno a CABA
 			try:
-				response = getRetornoCABA(destino, headers)
+				retorno_response = getRetornoCABA(destino, headers)
 				list(response)
 			except Exception as e:
 				mensaje_error = 'No se recibio respuesta de Retorno a CABA\n'
@@ -232,8 +232,8 @@ def armarRespuestaPuntos(datos, gml):
 
 			# Formateando el punto de retornoCABA para el ruteo
 			try:
-				resultado_du = response
-				retornoCABA = (resultado_du['latitud'], resultado_du['longitud'])
+				retorno_resultado_du = retorno_response
+				retornoCABA = (retorno_resultado_du['latitud'], retorno_resultado_du['longitud'])
 			except Exception as e:
 				mensaje_error = 'La respuesta de Retorno a CABA no continene latitud y/o longitud:'
 				print(mensaje_error, e)
@@ -243,19 +243,19 @@ def armarRespuestaPuntos(datos, gml):
 				ruteoRetornoCABA = [destino]
 				ruteoRetornoCABA.append([retornoCABA[0], retornoCABA[1], str(retornoCABA[0] + "," + retornoCABA[1])])
 				try:
-					response = getRuteo(ruteoRetornoCABA, headers, gml)
+					retorno_response = getRuteo(ruteoRetornoCABA, headers, gml)
 				except Exception as e:
 					isRuteoOK = False
 					mensaje_error = 'La respuesta del ruteo hasta Retorno a CABA no respondio: '
 					raise
 					break
-				resultado = response.json()
-				retorno_caba_distance = resultado['routes'][0]['distance']
-				retorno_caba_time = resultado['routes'][0]['duration']
+				retorno_resultado = retorno_response.json()
+				retorno_caba_distance = retorno_resultado['routes'][0]['distance']
+				retorno_caba_time = retorno_resultado['routes'][0]['duration']
 			else:
-				resultado_json = getResultadoEnCero()
-				resultado_json["mensaje"] = mensaje_error
-				return resultado_json
+				retorno_resultado_json = getResultadoEnCero()
+				retorno_resultado_json["mensaje"] = mensaje_error
+				return retorno_resultado_json
 			# La coordenada de retorno está bien construida
 		#el destino estuvo dentro de caba
 		else:
