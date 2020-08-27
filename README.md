@@ -63,8 +63,11 @@ Uso de api_manager
     - El proyecto puede levantarse con su docker file.
     - Endpoint de calculo de ruta -> $host:\calculo_ruta
     - Ejemplo para el calculo de ruta:
-        En este caso se pasan 2 pares ordenados lat lon en un request vectorial llamado data
-        http://$host/calculo_ruta?data[]=-34.5947&data[]=-58.4858&data[]=-34.6069&data[]=-58.4937&data[]=-34.6038&data[]=-58.5119&data[]=-34.5902&data[]=-58.5288&gml=1
-        - Lo que devolvera un json con los calculos de ruta mas un gml si es que lo requerimos en la llamada : {"total_time": 2713, "total_distance": 9377, "return_caba_time": 483, "return_caba_distance": 2248,
+        - En este caso se pasan hasta 3 pares de coordenadas lat lon en un request, si gml no se especifica o es igual a 0 devuelve un json
+        http://$host/calculo_ruta?origen=-34.5947,-58.4858&parada1=-34.914821,-57.957681&parada2=-34.594289,-58.379221&parada3=-34.593021,-58.376647&destino=-34.5947,-58.485&cant_equipaje=3&gml=1
+        - Lo que devolvera un json con los calculos de ruta mas un gml si es que lo requerimos en la llamada : {"total_tiempo": 7328.7, "total_distancia": 142339, "retorno_caba_tiempo": 0, "retorno_caba_distancia": 0, "ruteo": {"code": "Ok", "routes": [{ ... }]}
+        - En este caso se pasan hasta 3 pares de coordenadas lat lon en un request y opcionalmente la cantidad de equipaje poque se tiene en cuenta para el calculo de tarifa, si gml no se especifica o es igual a 0 devuelve un json
+        http://$host/calculo_ruta_tarifa?origen=-34.5947,-58.4858&parada1=-34.914821,-57.957681&parada2=-34.594289,-58.379221&parada3=-34.593021,-58.376647&destino=-34.5947,-58.485&gml=1
+        - Lo que devolvera un json con los calculos de ruta mas un gml si es que lo requerimos en la llamada : {"total_tiempo": 7328.7, "total_distancia": 142339, "retorno_caba_tiempo": 0, "retorno_caba_distancia": 0, "ruteo": {"code": "Ok", "routes": [{ ... }]}, "total_tarifa": 5219.34, "retorno_caba_tarifa": 0}
     - El uso de un parametro vectorial en el request responde a la idea de hacer un servicio generico que pueda procesar una cantidad indeterminada de paradas, no obstante se determino un limite superior de 10 puntos de calculo.
     - El proyecto tambien consta de un endpoint http://$host/puntosMapa que permite el ingreso de puntos de manera grafica con una script de leaflet, esta script basicamente consume calculo_ruta por intermedio de ajax con el verbo POST, es recomendable por lo tanto tener el servicio corriendo bajo certificacion SSL para evitar bloqueos de CORS.
