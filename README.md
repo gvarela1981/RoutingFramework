@@ -69,6 +69,6 @@ Uso de api_manager
       - En este caso se pasan hasta 3 pares de coordenadas lat lon en un request y opcionalmente la cantidad de equipaje poque se tiene en cuenta para el calculo de tarifa, si gml no se especifica o es igual a 0 devuelve un json
       http://$host/calculo_ruta_tarifa?origen=-34.5947,-58.4858&parada1=-34.914821,-57.957681&parada2=-34.594289,-58.379221&parada3=-34.593021,-58.376647&destino=-34.5947,-58.485&gml=1
       - Lo que devolvera un json con los calculos de ruta mas un gml si es que lo requerimos en la llamada : {"total_tiempo": 7328.7, "total_distancia": 142339, "retorno_caba_tiempo": 0, "retorno_caba_distancia": 0, "ruteo": {"code": "Ok", "routes": [{ ... }]}, "total_tarifa": 5219.34, "retorno_caba_tarifa": 0}
-        
+
     - El uso de un parametro vectorial en el request responde a la idea de hacer un servicio generico que pueda procesar una cantidad indeterminada de paradas, no obstante se determino un limite superior de 10 puntos de calculo.
     - El proyecto tambien consta de un endpoint http://$host/puntosMapa que permite el ingreso de puntos de manera grafica con una script de leaflet, esta script basicamente consume calculo_ruta por intermedio de ajax con el verbo POST, es recomendable por lo tanto tener el servicio corriendo bajo certificacion SSL para evitar bloqueos de CORS.
