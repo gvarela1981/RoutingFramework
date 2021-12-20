@@ -39,7 +39,7 @@ Uso de api_manager
 
 * Clonar el proyecto:
 
-    - $ git clone http://git-asi.buenosaires.gob.ar/usig/api_manager.git
+    - $ git clone https://github.com/gvarela1981/RoutingFramework.git
 
 * Pararse sobre la raiz de api_manage y ejecutar:
 
